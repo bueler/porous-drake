@@ -1,14 +1,5 @@
-# Solves a steady-state porous media equation
-#   0 = 
-# using Firedrake.  Applies Newton's method.
-#   The above equation comes from mass continuity, Darcy flux,
-# and the ideal gas law:
-#   (rho phi)_t + div(rho u) = 0
-#   u = - (k/mu) grad(P + rho g z)
-#   rho = (M/(RT)) P
-# Apply steady state (..)_t = 0 and choose units so that these
-# constants are one:
-#   (k mu) = (M/(RT)) = g = 1.
+# Solves a steady-state porous media equation using Firedrake by
+# applying Newton's method.  See latex/porous.pdf for documentation.
 
 from firedrake import *
 
@@ -17,13 +8,12 @@ from firedrake import *
 mesh = UnitSquareMesh(10,10)
 
 H = FunctionSpace(mesh,'CG',1)
-q = TestFunction(H)
+w = TestFunction(H)
 
 x, z = SpatialCoordinate(mesh)   # x horizontal, z vertical
 
 rho = Function(H, name='rho(x,y)  density')
-F = ( rho * dot(grad(rho), grad(q)) + rho * dot(grad(z), grad(q)) ) * dx \
-    - Constant(1.0) * q * ds(3)
+F = ( rho * dot(grad(rho + rho * z), grad(w)) ) * dx
 #if injectleft:
 #    F += FIXME * ds(1)
 bdry_ids = (4,)
