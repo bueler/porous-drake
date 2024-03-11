@@ -3,9 +3,17 @@
 
 from firedrake import *
 
+m = 20               # resolution
+injectleft = False   # case 1: False, case 2: True
+
+k = 1.0              # permeability
+c = 1.0              # ratio  RT/M  in ideal gas law
+mu = 1.0             # dynamic viscosity
+g = 1.0              # acceleration of gravity
+
 # indices of four boundaries/sides:
 #   (1, 2, 3, 4) = (left, right, bottom, top)
-mesh = UnitSquareMesh(10,10)
+mesh = UnitSquareMesh(m,m)
 
 H = FunctionSpace(mesh,'CG',1)
 w = TestFunction(H)
@@ -13,9 +21,10 @@ w = TestFunction(H)
 x, z = SpatialCoordinate(mesh)   # x horizontal, z vertical
 
 rho = Function(H, name='rho(x,y)  density')
-F = ( rho * dot(grad(rho + rho * z), grad(w)) ) * dx
-#if injectleft:
-#    F += FIXME * ds(1)
+F = ( k * rho * dot(grad(c * rho + rho * g * z), grad(w)) ) * dx
+if injectleft:
+    qone = conditional(z < 0.4, conditional(z > 0.2, Constant(-3.0), Constant(0.0)), Constant(0.0))
+    F += mu * rho * qone * w * ds(1)
 bdry_ids = (4,)
 BCs = DirichletBC(H, Constant(1.0), bdry_ids)  # rho = 1 on top
 

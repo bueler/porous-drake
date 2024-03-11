@@ -1,10 +1,10 @@
-all: porous.pdf
+all: doc.pdf
 
-porous.pdf: porous.aux
-	pdflatex porous
+doc.pdf: doc.aux
+	pdflatex doc
 
-porous.aux: porous.tex
-	pdflatex porous
+doc.aux: doc.tex
+	pdflatex doc
 
 .PHONY: clean
 
