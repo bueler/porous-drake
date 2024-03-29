@@ -1,11 +1,14 @@
 \documentclass[11pt]{article}
+\usepackage[
+style=authoryear,
+]{biblatex}
+\addbibresource{biblio.bib} 
 %prepared in AMSLaTeX, under LaTeX2e
 \addtolength{\oddsidemargin}{-.75in} 
 \addtolength{\evensidemargin}{-.75in}
 \addtolength{\topmargin}{-.6in}
 \addtolength{\textwidth}{1.4in}
 \addtolength{\textheight}{1.3in}
-
 \renewcommand{\baselinestretch}{1.06}
 
 \usepackage{wrapfig,fancyvrb,xspace}
@@ -58,7 +61,7 @@ A gas flows through that medium.  We will take various properties of the gas to 
 \begin{align}
 \frac{\partial}{\partial t} \left(\rho \phi\right) + \Div \left(\rho\, \bq\right) &= 0 \label{eq:masscont} \\
 \bq &= - \frac{k}{\mu} \grad\left(P + \rho g z\right) \label{eq:darcy} \\
-P &= \frac{RT}{M} \rho \label{eq:idealgas}
+\rho &= \frac{M}{RT} P \label{eq:idealgas}
 \end{align}
 \end{subequations}
 
@@ -154,5 +157,55 @@ Basically it is Newton's method, which is managed by the SNES component of PETSc
 \end{Verbatim}
 Much more could be said.
 
-\end{document}
 
+
+\section{An application for the 2D Darcy-type gas flow through a porous lava dome}
+
+In \cite{Graham2023}, we measure permeability of samples from various textural units of the Obsidian dome and South Deadman dome using field and lab permeameters. These two domes are silicic lava flows in the Inyo Craters portion of the Mono-Inyo Craters in eastern California, a chain of silicic lava flows, domes, and explosion craters that stretches 12 km (7.5 miles) to the north-northeast of Long Valley Caldera. The Inyo craters erupted as recently as ~675 years (~1350 A.D.) before present. Prior studies subdivided the majority of the lava erupted at the Inyo Craters according to the observed vesicle textures found in different parts of each flow, subdivided into finely vesicular pumice (FV), coarsely vesicular pumice (CV), and dense obsidian (OB). Shallow scientific bore hole drilling in the 1970's confirmed the presence of an underground magmatic intrusion, which was the source of the domes. This drilling also provided some general constraints on the depth of each distinct textural unit within the dome (Table \ref{tab:UnitPermPoro}).
+
+In this study, we wish to put constraints on the surface gas flux for each textural unit at Obsidian Dome. The unit mapping of the dome is shown in Fig. \ref{fig:unitMapping}, and an example cross-section is shown in Fig. \ref{fig:crossSection}. Using constraints on dome height, the depth and permeability of each unit, and assuming a significant portion of gas is sourced from degassing of the underlying feeder dike, we can use Darcy's law to calculate the surface gas flux through each unit. This was done in \cite{Graham2023} using a 1D model of Darcy's law, as implemented in \cite{Edmonds2003}, and we wish to extend this model into 2-dimensions, to account for the unit layering, which may affect the path of gas flow towards the surface.
+
+COMSOL model results for gas density and surface gas flux are shown in Fig. \ref{fig:COMSOLresults}, with annotations stating relevant boundary conditions. Here we assume atmospheric pressure at the surface ($P_{atm} = 1.01325$ bar) and a pressure at the base of the dome ($L=22$ m) of $P_{z=L} = 11$ bar. There is a gas inlet at the base of the CV unit, through which steam at a temperature of 920$^{\circ}$C can enter the dome porous matrix. For simplicity, a no flow condition is imposed at the unit sides, and we choose to solve for the steady-state isothermal, compressible gas flow using Darcy's Law to relate volumetric gas flux and pressure. The porosity and permeability for each unit, as well as their height and percent of total dome surface area, are shown in Table \ref{tab:UnitPermPoro}.
+
+
+
+\begin{figure}
+   \centering
+\includegraphics[scale=0.3]{unitMapping.png}
+\caption{Textural lithologic distribution maps of lavas for (A) Obsidian dome and (B) South Deadman dome.}
+\label{fig:unitMapping}
+\end{figure}
+
+\begin{figure}
+   \centering
+\includegraphics[scale=0.5]{crossSection.png}
+\caption{Schematic diagrams depicting total calculated gas flux percentages during the final stages of lava emplacement at Obsidian dome. Total gas flux for each lithologic unit was calculated using the gas flux model of Edmonds et al. (2003), and the gas flux percentages represent the percent gas flux for each lithologic unit relative to the total gas flux calculated for all units, and does not consider additional degassing that occurs through conduit processes, fractures, tuffisite veins, or porous pathways that are too large to measure.}
+\label{fig:crossSection}
+\end{figure}
+
+\begin{figure}
+   \centering
+\includegraphics[scale=0.8]{comsolDarcyLaw_units.png}
+\caption{Top figure shows gas density in unit layers CV, FV, and OB, with permeabilities k1, k2, and k3, respectively (see Table \ref{tab:UnitPermPoro}). Streamlines indicate the direction of gas flow. Pressure boundary conditions at the base and surface of the units are shown in black, and no flow boundary conditions at the side of the units are shown in red. The bottom figure shows the gas flux at the surface.}
+\label{fig:COMSOLresults}
+\end{figure}
+
+
+\begin{table}[h]
+\center
+      \small
+      \begin{tabular}{lllll}
+      \hline
+      \textbf{Unit} & \textbf{Permeability (m\textsuperscript{2})} & \textbf{Connected porosity (\%)}  & \textbf{Height (m)} & \textbf{Percent of total dome surface area} \\  
+      \hline
+      CV & 6.87E-12 & 50.0 & 10 & 6.4 \\
+      FV & 2.18E-13 & 23.2 &  7 & 74.6 \\
+      OB & 4.94E-15 & 3.24 & 5 & 19.0 \\ 
+\end{tabular}%}
+\caption{Average permeability, porosity, height, and percent of total dome surface area of each textural unit.} 
+\label{tab:UnitPermPoro}
+\end{table}
+
+\printbibliography
+
+\end{document}
