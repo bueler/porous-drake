@@ -1,6 +1,8 @@
 all: doc.pdf
 
 doc.pdf: doc.aux
+	biber doc
+	pdflatex doc
 	pdflatex doc
 
 doc.aux: doc.tex
