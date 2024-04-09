@@ -5,9 +5,10 @@ m = 200              # resolution
 lx = 100.0
 ly = 24.0
 
-k1 = 6.87e-12  # CV
-k2 = 4.94e-15  # OB
-k3 = 2.18e-13  # FV
+# unit properties
+k1, phi1 = 6.87e-12, 0.500  # CV
+k2, phi2 = 4.94e-15, 0.0324 # OB
+k3, phi3 = 2.18e-13, 0.232  # FV
 
 R = 8.314462618
 T = 293.15
@@ -31,9 +32,13 @@ omega, v = TestFunctions(W)
 
 x, z = SpatialCoordinate(mesh)   # x horizontal, z vertical
 
-# k field, guessed from COMSOL-generated(?) figure
+# k = permeability field, guessed from COMSOL-generated(?) figure
 kupper = conditional(z < 18.0, k2, conditional(abs(x - 50.0) < 12.0, k2, k3))
 k = conditional(z < 12.0, k1, conditional(abs(x - 50.0) < 4.0, k1, kupper))
+
+# phi = corresponding porosity field; conditional structure the same
+phiupper = conditional(z < 18.0, phi2, conditional(abs(x - 50.0) < 12.0, phi2, phi3))
+phi = conditional(z < 12.0, phi1, conditional(abs(x - 50.0) < 4.0, phi1, phiupper))
 
 ## Steam density at atmospheric pressure
 dens = 0.6 # kg/m^3
@@ -75,11 +80,18 @@ sigma, rho = w.subfunctions
 sigma.rename('sigma = rho q')
 rho.rename('rho (density)')
 
-print('solve to extract q ...')
-q = Function(S, name="q (darcy velocity)")
+print('solve "rho q = sigma" to extract q ...')
+q = Function(S, name="q (darcy flux)")
 tau = TestFunction(S)
 Fextractq = (rho * dot(q, tau) - dot(sigma, tau)) * dx
 solve(Fextractq == 0, q,
+      solver_parameters = {'ksp_converged_reason': None,
+                           'snes_converged_reason': None})
+
+print('solve "phi u = q" to extract u ...')
+u = Function(S, name="u (fluid velocity)")
+Fextractu = (phi * dot(u, tau) - dot(q, tau)) * dx
+solve(Fextractu == 0, u,
       solver_parameters = {'ksp_converged_reason': None,
                            'snes_converged_reason': None})
 
@@ -88,4 +100,4 @@ kout = Function(H, name="permeability").interpolate(k)
 
 # measure conservation here?
 
-VTKFile("result.pvd").write(sigma, rho, q, p, kout)
+VTKFile("result.pvd").write(sigma, q, u, rho, p, kout)
