@@ -1,5 +1,8 @@
 from firedrake import *
 from firedrake.output import VTKFile
+import scipy.ndimage as ndimage
+import matplotlib.pyplot as plt
+import math
 
 m = 200              # resolution
 lx = 100.0
@@ -33,12 +36,15 @@ omega, v = TestFunctions(W)
 x, z = SpatialCoordinate(mesh)   # x horizontal, z vertical
 
 # k = permeability field, guessed from COMSOL-generated(?) figure
-kupper = conditional(z < 18.0, k2, conditional(abs(x - 50.0) < 12.0, k2, k3))
-k = conditional(z < 12.0, k1, conditional(abs(x - 50.0) < 4.0, k1, kupper))
+# kupper = conditional(z < 18.0, k2, conditional(abs(x - 50.0) < 12.0, k2, k3))
+#k = conditional(z < 12.0, k1, conditional(abs(x - 50.0) < 4.0, k1, kupper))
+
+# Vary permeability smoothly across x
+k = (-3e-12 * sin((2*pi/lx)*x)) + k1
 
 # phi = corresponding porosity field; conditional structure the same
-phiupper = conditional(z < 18.0, phi2, conditional(abs(x - 50.0) < 12.0, phi2, phi3))
-phi = conditional(z < 12.0, phi1, conditional(abs(x - 50.0) < 4.0, phi1, phiupper))
+phiupper = Constant(0.3) #conditional(z < 18.0, phi2, conditional(abs(x - 50.0) < 12.0, phi2, phi3))
+phi = Constant(0.3) #conditional(z < 12.0, phi1, conditional(abs(x - 50.0) < 4.0, phi1, phiupper))
 
 ## Steam density at atmospheric pressure
 dens = 0.6 # kg/m^3
@@ -95,6 +101,7 @@ Fextractq = (rho * dot(q, tau) - dot(sigma, tau)) * dx
 solve(Fextractq == 0, q, options_prefix='extractq',
       solver_parameters = {'ksp_converged_reason': None,
                            'snes_converged_reason': None})
+
 print('solve "phi u = q" to extract u ...')
 u = Function(S, name="u (fluid velocity)")
 Fextractu = (phi * dot(u, tau) - dot(q, tau)) * dx
