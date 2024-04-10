@@ -39,8 +39,8 @@ x, z = SpatialCoordinate(mesh)   # x horizontal, z vertical
 # kupper = conditional(z < 18.0, k2, conditional(abs(x - 50.0) < 12.0, k2, k3))
 #k = conditional(z < 12.0, k1, conditional(abs(x - 50.0) < 4.0, k1, kupper))
 
-# Vary permeability smoothly across x
-k = (-3e-12 * sin((2*pi/lx)*x)) + k1
+# Vary permeability smoothly across x and z
+k = ((k1*9) * sin((2*pi/lx)*(x+z))) + k1*10
 
 # phi = corresponding porosity field; conditional structure the same
 phiupper = Constant(0.3) #conditional(z < 18.0, phi2, conditional(abs(x - 50.0) < 12.0, phi2, phi3))
