@@ -102,9 +102,11 @@ We will solve system \eqref{eq:pm:strong} by a conservative mixed finite element
 \int_\Omega (\Div \bsigma) v\,\dx &= 0
 \end{align}
 \end{subequations}
-Here $\dx = dx\,dz$ denotes the area element.  Also $\ds$, $\bn$ will denote the integral over a curve and the outward normal unit vector on $\partial\Omega$.
+Here $\dx = dx\,dz$ denotes the area element.
 
-Integrating by parts using the divergence theorem ($\int_\Omega \Div \bX\,\dx = \int_{\partial\Omega} \bX\cdot \bn\,\ds$) to remove the derivatives from the pressure expression $P=c\rho+\rho g z$ we get the weak form
+Integration by parts will now use the divergence theorem
+    $$\int_\Omega \Div \bX\,\dx = \int_{\partial\Omega} \bX\cdot \bn\,\ds$$
+to remove the derivatives from the pressure $P=c\rho+\rho g z$.  Here $\ds$ denotes the integral over $\partial\Omega$ and $\bn$ denotes the outward normal unit vector on $\partial\Omega$.  We get the weak form
 \begin{subequations}
 \label{eq:pm:weak:early}
 \begin{align}
@@ -112,7 +114,9 @@ Integrating by parts using the divergence theorem ($\int_\Omega \Div \bX\,\dx = 
 \int_\Omega (\Div \bsigma) v\,\dx &= 0
 \end{align}
 \end{subequations}
-Notice that $k$ now appears inside a divergence in the first equation, because it varies spatially.
+Notice that $k$ now appears inside a divergence in the first equation.
+
+% FIXME: k and rho are discontinuous (and spatial varying) fields, so it is bad that they are inside the divergence
 
 In order to write a final weak form, suitable for a Firedrake \citep{Ham2023}, we must choose suitable boundary conditions.  Along the part of the boundary $\partial\Omega$ where the pressure (or density) is determined, which we denote $\Gamma_0 \subset \partial\Omega$, the boundary integral in \eqref{eq:pm:weak:early:darcy} becomes a known linear functional on the test function $\bomega$.  The known value of the density in these location is denoted $\rho_0$.  On the remainder of the boundary we must impose the essential requirement that $\bomega\cdot \bn=0$ on the function space; this is done through Firedrake's \verb|DirichletBC()| command.  The resulting final weak form can be written as follows, with the known pressure boundary condition on the right:
 \begin{subequations}
