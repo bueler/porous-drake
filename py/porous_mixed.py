@@ -70,10 +70,10 @@ solve(F == 0, w, bcs=[BCs,],
       solver_parameters = {'snes_type': 'newtonls',
                            'snes_linesearch_type': 'bt',
                            'snes_rtol': 1.0e-5,
-                           'ksp_type': 'preonly',
-                           'pc_type': 'lu',
                            'snes_monitor': None,
                            'snes_converged_reason': None,
+                           'ksp_type': 'preonly',
+                           'pc_type': 'lu',
                            'pc_factor_mat_solver_type': 'mumps'})
 
 sigma, rho = w.subfunctions
@@ -101,3 +101,5 @@ kout = Function(H, name="permeability").interpolate(k)
 # measure conservation here?
 
 VTKFile("result.pvd").write(sigma, q, u, rho, p, kout)
+
+# spews bibtex: Citations.print_at_exit()
