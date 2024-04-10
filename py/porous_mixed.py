@@ -60,13 +60,12 @@ F = dot(sigma, omega) * dx - (1.0/mu) * Phead * div(k * rho * omega) * dx \
     + div(sigma) * v * dx
 
 # Neumann conditions on u for ids 1,2 is now Dirichlet on normal
-# component of sigma = - grad(u), but we must set both components
-# apparently
+# component of sigma; we must set both components apparently
 BCs = DirichletBC(W.sub(0), as_vector([0.0,0.0]), (1,2))
 
-print('main solve ...')
+print('solving weak mixed form for sigma, rho ...')
 w.assign(dens)  # initial iterate nonzero (equals top b. c.)
-solve(F == 0, w, bcs=[BCs,],
+solve(F == 0, w, bcs=[BCs,], options_prefix='main',
       solver_parameters = {'snes_type': 'newtonls',
                            'snes_linesearch_type': 'bt',
                            'snes_rtol': 1.0e-5,
@@ -77,29 +76,37 @@ solve(F == 0, w, bcs=[BCs,],
                            'pc_factor_mat_solver_type': 'mumps'})
 
 sigma, rho = w.subfunctions
-sigma.rename('sigma = rho q')
+sigma.rename('sigma = rho q (mass flux)')
 rho.rename('rho (density)')
 
+print('measuring conservation ...')
+topflux = assemble(dot(sigma,n) * ds(4))
+bottomflux = assemble(dot(sigma,n) * ds(3))
+imbalance = topflux + bottomflux
+print(f'  flux out of top    = {topflux:13.6e}')
+print(f'  flux into bottom   = {-bottomflux:13.6e}')
+print(f'  imbalance          = {imbalance:13.6e}')
+
+# generate diagnostic fields, and write out
 print('solve "rho q = sigma" to extract q ...')
 q = Function(S, name="q (darcy flux)")
 tau = TestFunction(S)
 Fextractq = (rho * dot(q, tau) - dot(sigma, tau)) * dx
-solve(Fextractq == 0, q,
+solve(Fextractq == 0, q, options_prefix='extractq',
       solver_parameters = {'ksp_converged_reason': None,
                            'snes_converged_reason': None})
-
 print('solve "phi u = q" to extract u ...')
 u = Function(S, name="u (fluid velocity)")
 Fextractu = (phi * dot(u, tau) - dot(q, tau)) * dx
-solve(Fextractu == 0, u,
+solve(Fextractu == 0, u, options_prefix='extractu',
       solver_parameters = {'ksp_converged_reason': None,
                            'snes_converged_reason': None})
 
-p = Function(H, name="pressure").interpolate(rho * c)
-kout = Function(H, name="permeability").interpolate(k)
+p = Function(H, name="p (pressure)").interpolate(rho * c)
+kout = Function(H, name="k (permeability)").interpolate(k)
+phiout = Function(H, name='phi (porosity)').interpolate(phi)
 
-# measure conservation here?
-
-VTKFile("result.pvd").write(sigma, q, u, rho, p, kout)
+print('saving fields to result.pvd ...')
+VTKFile("result.pvd").write(sigma, q, u, rho, p, kout, phiout)
 
 # spews bibtex: Citations.print_at_exit()

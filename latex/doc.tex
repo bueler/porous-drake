@@ -156,6 +156,25 @@ solve(F == 0, w, bcs=[BCs,],
 \end{Verbatim}
 A more advanced iterative, block-wise, and multigrid solver is possible \citep[e.g.][]{Bueler2021}, but it will require careful development.
 
+Confirmation of global mass conservation is straightforward.  For example, on a rectangular domain with top side index \verb|4| and bottom side index \verb|3|:
+\begin{Verbatim}[fontsize=\small,frame=lines]
+topflux = assemble(dot(sigma,n) * ds(4))
+bottomflux = assemble(dot(sigma,n) * ds(3))
+imbalance = topflux + bottomflux
+print(f'  flux out of top    = {topflux:13.6e}')
+print(f'  flux into bottom   = {-bottomflux:13.6e}')
+print(f'  imbalance          = {imbalance:13.6e}')
+\end{Verbatim}
+These \verb|assemble| expressions compute mass flux integrals
+    $$\int_{\Gamma_i} \sigma\cdot \bn\,\ds = \int_{\Gamma_i} \rho \bq\cdot \bn\,\ds$$
+over a particular side $\Gamma_i$.  In a typical run we get fluxes which balance to rounding error:
+\begin{Verbatim}[fontsize=\small,frame=leftline]
+  flux out of top    =  1.315019e+01
+  flux into bottom   =  1.315019e+01
+  imbalance          = -1.953993e-14
+\end{Verbatim}
+
+
 \section{An application for gas flow through a porous lava dome}
 
 In \cite{Graham2023}, we measure permeability of samples from various textural units of the Obsidian dome and South Deadman dome using field and lab permeameters. These two domes are silicic lava flows in the Inyo Craters portion of the Mono-Inyo Craters in eastern California, a chain of silicic lava flows, domes, and explosion craters that stretches 12 km (7.5 miles) to the north-northeast of Long Valley Caldera. The Inyo craters erupted as recently as ~675 years (~1350 A.D.) before present. Prior studies subdivided the majority of the lava erupted at the Inyo Craters according to the observed vesicle textures found in different parts of each flow, subdivided into finely vesicular pumice (FV), coarsely vesicular pumice (CV), and dense obsidian (OB). Shallow scientific bore hole drilling in the 1970's confirmed the presence of an underground magmatic intrusion, which was the source of the domes. This drilling also provided some general constraints on the depth of each distinct textural unit within the dome (Table \ref{tab:UnitPermPoro}).
