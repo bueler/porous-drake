@@ -34,26 +34,16 @@ w = TestFunction(H)
 
 x, z = SpatialCoordinate(mesh)   # x horizontal, z vertical
 
-k = (-3e-12 * sin((2*pi/lx)*x)) + k1
+k = ((k1*9) * sin((2*pi/lx)*(x+z))) + k1*10
 
 ## Does not converge for k1 = 1e-11 and k2 = 1e-18
 #k = conditional(z < 40., conditional(z > 20., Constant(k1), Constant(k2)), Constant(k2)) # For 3D model -- can output to file to compare
 
 # Define scalar and vector function space for density and darcy velocity, respectively
-rho = Function(H, name='rho(x,y)  density')
-q =  Function(V, name='q(x,y)  darcy velocity')
+rho = Function(H, name='rho (density)')
+#q =  Function(V, name='q(x,y)  darcy velocity')
 
 F = ( k * rho * dot(grad(c * rho + rho * g * z), grad(w)) ) * dx
-
-# calculate reasonable inlet gas flux if we want a Neumann BC
-#q_in = lx * (2700. * -1 * g * ly * M / (R * T)) 
-
-if injectleft:
-    qone = conditional(z < 0.4, conditional(z > 0.2, Constant(-3.0), Constant(0.0)), Constant(0.0))
-    F += mu * rho * qone * w * ds(1)
-if injectbottom:
-    qone = conditional(x < 90., conditional(x > 10., Constant(q_in), Constant(0.0)), Constant(0.0))
-    F += mu * rho * qone * w * ds(3)
 
 ## Add Dirichlet BCs
 
@@ -74,11 +64,13 @@ solve(F == 0, rho, bcs=[BCs, BCs1],
       solver_parameters = {'snes_type': 'newtonls',
                            #'snes_linesearch_type': 'bt',
                            #'snes_view': None,
+                           'snes_monitor': None,
+                           'snes_converged_reason': None,
                            'ksp_type': 'preonly',
                            'pc_type': 'lu'})
 
-p0 = Function(H, name="pressure").interpolate(rho * c)  # or P0.project((rho * c)) 
+p0 = Function(H, name="p (pressure)").interpolate(rho * c)  # or P0.project((rho * c)) 
 
-q = Function(V, name="darcy velocity").interpolate(-k/mu * grad(c * rho + rho * g * z)) # or q.project(-k/mu * grad(c * rho + rho * g * z))
+q = Function(V, name="q (darcy flux)").interpolate(-k/mu * grad(c * rho + rho * g * z)) # or q.project(-k/mu * grad(c * rho + rho * g * z))
 
 VTKFile("result_CG1.pvd").write(rho, q, p0)
