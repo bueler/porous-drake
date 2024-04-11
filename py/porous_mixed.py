@@ -18,7 +18,7 @@ T = 293.15
 M = 0.018015
 c = (R * T) / M            # ratio  M/RT in ideal gas law
 mu = 0.000043           # dynamic viscosity
-g = 9.8             # acceleration of gravity
+g = -9.8             # acceleration of gravity
 
 # indices of four boundaries/sides:
 #   (1, 2, 3, 4) = (left, right, bottom, top)
@@ -82,7 +82,7 @@ solve(F == 0, w, bcs=[BCs,], options_prefix='main',
                            'pc_factor_mat_solver_type': 'mumps'})
 
 sigma, rho = w.subfunctions
-sigma.rename('sigma = rho q (mass flux)')
+sigma.rename('sigma = rho q/phi (mass flux)')
 rho.rename('rho (density)')
 
 print('measuring conservation ...')

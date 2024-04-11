@@ -20,7 +20,7 @@ T = 293.15
 M = 0.018015 
 c = (R * T) / M            # ratio  M/RT in ideal gas law
 mu = 0.000043           # dynamic viscosity
-g = 9.8             # acceleration of gravity
+g = -9.8             # acceleration of gravity
 
 print("Atmospheric pressure is", 0.6*(c), " Pa")
 
