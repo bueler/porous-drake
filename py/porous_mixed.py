@@ -5,54 +5,51 @@ import matplotlib.pyplot as plt
 import math
 
 m = 200              # resolution
-lx = 100.0
-ly = 24.0
+lx = 100.0           # width
+ly = 24.0            # height
 
 # unit properties
 k1, phi1 = 6.87e-12, 0.500  # CV
-k2, phi2 = 4.94e-15, 0.0324 # OB
-k3, phi3 = 2.18e-13, 0.232  # FV
 
-R = 8.314462618
-T = 293.15
-M = 0.018015
-c = (R * T) / M            # ratio  M/RT in ideal gas law
+# defined parameters
+R = 8.314462618         # universal gas constant 
+T = 293.15              # dome and gas temperature
+M = 0.018015            # molar mass of steam 
+c = (R * T) / M         # ratio  M/RT from ideal gas law
 mu = 0.000043           # dynamic viscosity
-g = -9.8             # acceleration of gravity
+g = -9.8                # acceleration of gravity
+patm = 101000.          # atmospheric pressure
+dens_r = 2700.          # overburden rock/lava density
 
 # indices of four boundaries/sides:
 #   (1, 2, 3, 4) = (left, right, bottom, top)
 mesh = RectangleMesh(m, m, lx, ly, quadrilateral=True)
 
+# choose function spaces
 k = 1
 S = FunctionSpace(mesh, 'RTCF', k)    # or 'BDMCF' (on quadrilaterals)
 H = FunctionSpace(mesh, 'DG', k-1)
 W = S * H
 
 w = Function(W)
-sigma, rho = split(w)         # sigma is mass flux: sigma = rho * q
+sigma, rho = split(w)         # sigma is mass flux: sigma = rho * q (/phi ?)
 omega, v = TestFunctions(W)
 
 x, z = SpatialCoordinate(mesh)   # x horizontal, z vertical
 
-# k = permeability field, guessed from COMSOL-generated(?) figure
-# kupper = conditional(z < 18.0, k2, conditional(abs(x - 50.0) < 12.0, k2, k3))
-#k = conditional(z < 12.0, k1, conditional(abs(x - 50.0) < 4.0, k1, kupper))
-
-# Vary permeability smoothly across x and z
+# vary permeability smoothly across x and z
 k = ((k1*9) * sin((2*pi/lx)*(x+z))) + k1*10
 
-# phi = corresponding porosity field; conditional structure the same
-phiupper = Constant(0.3) #conditional(z < 18.0, phi2, conditional(abs(x - 50.0) < 12.0, phi2, phi3))
-phi = Constant(0.3) #conditional(z < 12.0, phi1, conditional(abs(x - 50.0) < 4.0, phi1, phiupper))
+# phi = constant porosity
+phi = Constant(phi1)
 
-## Steam density at atmospheric pressure
-dens = 0.6 # kg/m^3
+# steam density at atmospheric pressure
+dens = patm / c # kg/m^3
 print("Steam density at surface is", dens, "kg/m^3")
-## Overpressure at depth
+# overpressure at depth, corresponding to input gas flux
 mpa = 1000000.
-## Steam density at 100m depth with 1 MPa overpressure
-dens1 = ((2700. * g * ly) + mpa) / c
+# steam density at 100m depth with 1 MPa overpressure
+dens1 = ((dens_r * g * ly) + mpa) / c
 print("Steam density at", ly, " m deep, with an overpressure of", mpa, "Pa: ",  dens1, "kg/m^3")
 
 # mixed weak form
@@ -82,7 +79,7 @@ solve(F == 0, w, bcs=[BCs,], options_prefix='main',
                            'pc_factor_mat_solver_type': 'mumps'})
 
 sigma, rho = w.subfunctions
-sigma.rename('sigma = rho q/phi (mass flux)')
+sigma.rename('sigma = rho q (mass flux)')
 rho.rename('rho (density)')
 
 print('measuring conservation ...')
