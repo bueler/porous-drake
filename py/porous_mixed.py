@@ -8,6 +8,17 @@ m = 200              # resolution
 lx = 100.0           # width
 ly = 24.0            # height
 
+## for multiple units with discontinuous k:
+# k1, phi1 = 6.87e-12, 0.500  # CV
+# k2, phi2 = 4.94e-15, 0.0324 # OB
+# k3, phi3 = 2.18e-13, 0.232  # FV
+## k = permeability field, guessed from COMSOL-generated(?) figure
+# kupper = conditional(z < 18.0, k2, conditional(abs(x - 50.0) < 12.0, k2, k3))
+# k = conditional(z < 12.0, k1, conditional(abs(x - 50.0) < 4.0, k1, kupper))
+## phi = corresponding porosity field; conditional structure the same
+# phiupper = conditional(z < 18.0, phi2, conditional(abs(x - 50.0) < 12.0, phi2, phi3))
+# phi = conditional(z < 12.0, phi1, conditional(abs(x - 50.0) < 4.0, phi1, phiupper))
+
 # unit properties
 k1, phi1 = 6.87e-12, 0.500  # CV
 

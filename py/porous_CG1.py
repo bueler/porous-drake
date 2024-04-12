@@ -2,6 +2,7 @@
 # applying Newton's method.  See latex/porous.pdf for documentation.
 
 from firedrake import *
+from firedrake.output import VTKFile
 
 m = 200               # resolution
 lx = 100.0
@@ -33,6 +34,9 @@ x, z = SpatialCoordinate(mesh)   # x horizontal, z vertical
 
 # vary permeability smoothly across x and z
 k = ((k1*9) * sin((2*pi/lx)*(x+z))) + k1*10
+
+# phi = constant porosity
+phi = Constant(phi1)
 
 # define scalar function space for density
 rho = Function(H, name='rho (density)')
