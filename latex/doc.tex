@@ -1,6 +1,6 @@
 \documentclass[11pt]{amsart}
 \usepackage[
-style=authoryear, natbib=true,
+style=apa, natbib=true,
 ]{biblatex}
 \addbibresource{biblio.bib} 
 %prepared in AMSLaTeX, under LaTeX2e
@@ -12,7 +12,7 @@ style=authoryear, natbib=true,
 \renewcommand{\baselinestretch}{1.06}
 
 \usepackage{wrapfig,fancyvrb,xspace}
-\usepackage{palatino,bm}
+\usepackage{palatino,bm,stmaryrd}
 \usepackage[final]{graphicx}
 \usepackage[pdftex, colorlinks=true, plainpages=false, linkcolor=blue, citecolor=red, urlcolor=blue]{hyperref}
 
@@ -20,6 +20,7 @@ style=authoryear, natbib=true,
 \newcommand{\bn}{\mathbf{n}}
 \newcommand{\bq}{\mathbf{q}}
 \newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
 \newcommand{\bw}{\mathbf{w}}
 \newcommand{\bx}{\mathbf{x}}
 
@@ -30,6 +31,7 @@ style=authoryear, natbib=true,
 
 \newcommand{\cH}{\mathcal{H}}
 \newcommand{\cK}{\mathcal{K}}
+\newcommand{\cT}{\mathcal{T}}
 \newcommand{\cV}{\mathcal{V}}
 
 \newcommand{\dx}{\mathrm{dx}}
@@ -42,6 +44,7 @@ style=authoryear, natbib=true,
 \newcommand{\grad}{\nabla}
 \newcommand{\lam}{\lambda}
 
+\newcommand{\jump}[1]{\llbracket #1 \rrbracket }
 
 
 \title{Gas in a porous media, using Firedrake}
@@ -59,31 +62,43 @@ style=authoryear, natbib=true,
 
 \section{A (draft) porous medium model for Darcy-type gas flow}
 
-Suppose $\Omega$ is a 2-dimensional domain with well-behaved boundary, such as a rectangle or other polygon.  We will use $x$ for the horizontal and $z$ for the vertical coordinate.  We assume $z$ is measured positive upward.  Within $\Omega$ we assume there is a matrix of porous material with variable properties of porosity $\phi(x,z)$ and permeability $k(x,z)$; these are assumed independent of time.
+Suppose $\Omega$ is a 2-dimensional domain with well-behaved boundary, such as a rectangle or other polygon.  We will use $x$ for the horizontal and $z$, measured positive upward, for the vertical coordinate.  Within $\Omega$ we assume there is a matrix of porous material with spatially-variable porosity $\phi(x,z)$ and permeability $k(x,z)$, but these are assumed independent of time.  An ideal gas flows through the medium.  We will take various properties of this gas to be positive constants: $R$ is the gas constant, $T$ is the absolute temperature, and $M$ is the molar mass.  The ideal gas law then says the density $\rho$ and pressure $P$ are proportional:
+\begin{equation}
+RT \rho = M P.  \label{eq:ideal}
+\end{equation}
+Let $c = RT/M$, a positive constant.
 
-Suppose that an ideal gas flows through that medium.  We will take various properties of the gas to be positive constants: $\mu$ is the dynamic viscosity, $R$ is the gas constant, $T$ is the absolute temperature, and $M$ is the molar mass.  The ideal gas law says $RT \rho = M P$.  The following system of equations, a mathematical model, applies to determing the evolution of the density $\rho(t,x,z)$, pressure $P(t,x,z)$, and vector volumetric flux $\bq(t,x,z)$:\footnote{TS: Please check that this is the model you want?}
+We assume that the gas flow satisfies Darcy's law [REF?], driven by the deviation of gas pressure from the (litho)static distribution.  The lithostatic distribution is the pressure field $P_0=-\rho g z$ for which there would be no flow; here $g$ is the (constant) acceleration of gravity.  Thus
+\begin{equation}
+P-P_0 = c\rho+\rho g z \label{eq:drivingpressure}
+\end{equation}
+is the driving distribution, the pressure head.  Adding mass conservation, the following system of equations therefore applies to determing the evolution of the density $\rho(t,x,z)$, in SI units of $\text{kg}\,\text{m}^{-3}$, and (vector) volumetric flux $\bq(t,x,z)$, in units $\text{m}^3\,\text{m}^{-2}\,\text{s}^{-1} = \text{m}\,\text{s}^{-1}$:
 \begin{subequations}
 \label{eq:pmtime}
 \begin{align}
-\phi \frac{\partial \rho}{\partial t} + \Div \left(\rho\, \bq\right) &= 0 \label{eq:pmtime:masscont} \\
-\bq &= - \frac{k}{\mu} \grad\left(c \rho + \rho g z\right) \label{eq:pmtime:darcy}
+\bq &= - \frac{k}{\mu} \grad\left(c \rho + \rho g z\right) \label{eq:pmtime:darcy} \\
+\phi \frac{\partial \rho}{\partial t} + \Div \left(\rho\, \bq\right) &= 0. \label{eq:pmtime:masscont}
 \end{align}
 \end{subequations}
-Here $c = RT/M$ is constant.  To be physical the density must be non-negative: $\rho\ge 0$.  In \eqref{eq:pmtime:masscont} we are assuming no mass sources or sinks in \eqref{eq:pmtime:masscont}, otherwise there could be a function on the right.  From the (litho)static pressure $P_0=-\rho g z$ note that $c\rho+\rho g z = P-P_0$, so we see that the flow in \eqref{eq:pmtime:darcy} is driven by deviations from static pressure.  The volumetric flux $\bq$ is related to the vector velocity $\bu$ by $\bq = \phi \bu$; the velocity $\bu$ may be helpful in diagnosing the solution but it is not needed to state the above.
+Here $\mu$ is the dynamic viscosity of the gas, again taken to be constant.
 
-It is straightforward to eliminate $\bq$ if desired:
+Several observations can be made.  To be physical the gas density must be non-negative: $\rho\ge 0$.  Relative to the classic mass continuity statement ``$\partial\rho/\partial t + \Div(\rho \bu)=0$'' \citep{Tadmor2012}, where $\bu$ is the fluid velocity, \eqref{eq:pmtime:masscont} is scaled with the porosity.  In fact this porosity is implicit in the definition of $\bq$ as a gas volume per unit area of (a face of) the porous matrix, equivalently $\bq$ is related to $\bu$ by $\bq = \phi \bu$, that is, via the dimensionless porosity.  Note that, while the velocity $\bu$ may be helpful in diagnosing the solution, it is not needed to state the model.
+
+It is straightforward to eliminate the flux $\bq$ if desired:
 \begin{equation}
-\phi \frac{\partial \rho}{\partial t} - \Div \left(\frac{k}{\mu} \rho \grad\left(c \rho + \rho g z\right)\right) = 0.  \qquad \text{\emph{(porous medium equation)}} \label{eq:pmtime:primal}
+\phi \frac{\partial \rho}{\partial t} - \Div \left(\frac{k}{\mu} \rho \grad\left(c \rho + \rho g z\right)\right) = 0. \label{eq:pmtime:primal}
 \end{equation}
 This form is comparable to the better-known heat equation
 \begin{equation}
 \frac{\partial u}{\partial t} - \Div(\grad u) = 0. \qquad \text{\emph{(heat equation)}}\label{eq:heattime:primal}
 \end{equation}
-An important property of \eqref{eq:heattime:primal} is that the operator $\Div \grad = \grad^2$ acts as a kind of invertible matrix, which assists in finding the solution $u$.  Since $\rho$ appears as a flux coefficient in \eqref{eq:pmtime:primal}, this invertibility will be lost if $\rho\to 0$ somewhere.  This ``degeneration'' of the diffusivity is a well-known property of the porous medium equation which may influence the numerical solution method.
+An important property of \eqref{eq:heattime:primal} is that the operator $\Div \grad = \grad^2$ acts as an invertible matrix when finding the solution $u$.  However, since $\rho$ appears as a flux coefficient in \eqref{eq:pmtime:primal}, invertibility is lost if $\rho\to 0$ somewhere.  This ``degeneration'' of the diffusivity is a well-known property \citep{Vazquez2007} of the porous medium equation \eqref{eq:pmtime:primal}; it will influence the numerical solution method below.
 
-System \eqref{eq:pmtime} is time dependent.  Its steady-state form is found by setting $\partial \rho/\partial t = 0$.  Also, to emphasize that mass is conserved we define the mass flux
-	$$\bsigma = \rho \bq.$$
-Thus the strong form for the steady-state problem can be written in terms of the conserved density $\rho$ and its flux $\bsigma$:
+System \eqref{eq:pmtime} is time dependent, but setting $\partial \rho/\partial t = 0$ yields the (mixed) strong form for the steady-state problem.  First we define the (conserved) mass flux in \eqref{eq:pmtime:masscont} as
+\begin{equation}
+\bsigma = \rho \bq, \label{eq:massflux}
+\end{equation}
+with units of $\text{kg}\,\text{m}^{-2}\,\text{s}^{-1}$.  Now we write the strong form in terms of the conserved density $\rho$ and its flux $\bsigma$:
 \begin{subequations}
 \label{eq:pm:strong}
 \begin{align}
@@ -91,58 +106,109 @@ Thus the strong form for the steady-state problem can be written in terms of the
 \Div \bsigma &= 0 \label{eq:masscont}
 \end{align}
 \end{subequations}
+Not we are assuming no mass sources or sinks, as otherwise there would be a function on the right of \eqref{eq:masscont}.
 
-\section{Weak form and finite element solution}
-
-We will solve system \eqref{eq:pm:strong} by a conservative mixed finite element method \citep{Boffi2013} in which the flux $\bsigma$ is continuous across faces (edges) of the elements.  To derive the weak form we multiply \eqref{eq:darcy} by a vector-valued test function $\bomega$, and multiply \eqref{eq:masscont} by a scalar test function $v$, and integrate over $\Omega$:
+Suitable boundary conditions must apply to system \eqref{eq:pm:strong}.  Along the ``Dirichlet'' part of the boundary, denoted $\Gamma_D \subset \partial\Omega$, the density (or pressure) is given.  On the remainder of the boundary $\Gamma_N = \partial\Omega \setminus \Gamma_D$, the ``Neumann'' boundary, the normal mass flux is zero. 
 \begin{subequations}
-\label{eq:pm:prelim}
+\label{eq:strongbcs}
 \begin{align}
-\int_\Omega \bsigma\cdot \bomega\,\dx + \int_\Omega \frac{k}{\mu} \rho \grad\left(c \rho + \rho g z\right) \cdot \bomega\,\dx &= 0 \\
-\int_\Omega (\Div \bsigma) v\,\dx &= 0
+\rho|_{\Gamma_D}               &= \rho_D(x,z) \\
+(\bsigma\cdot \bn)|_{\Gamma_N} &= 0
 \end{align}
 \end{subequations}
-Here $\dx = dx\,dz$ denotes the area element.
+It is easy to extend the model for provided values of the flux: $(\bsigma\cdot \bn)|_{\Gamma_N}= \sigma_N(x,z)$.
 
-Integration by parts will now use the divergence theorem
-    $$\int_\Omega \Div \bX\,\dx = \int_{\partial\Omega} \bX\cdot \bn\,\ds$$
-to remove the derivatives from the pressure $P=c\rho+\rho g z$.  Here $\ds$ denotes the integral over $\partial\Omega$ and $\bn$ denotes the outward normal unit vector on $\partial\Omega$.  We get the weak form
+\section{Weak form allowing discontinuous permeability}
+
+We will solve system \eqref{eq:pm:strong} by a conservative mixed finite element (FE) method \citep{Boffi2013}.  In this section we derive the weak form needed for this FE method via an element-wise weak form.  This derivation allows the permeability field to be discontinuous across element edges.
+
+For the moment let $E$ be any well-behaved open subset of $\Omega$ with piecewise-$C^1$ boundary, and we assume that the exact, continuum solution $\bsigma$ and $\rho$ of \eqref{eq:pm:strong} are sufficiently continuous/smooth so that \eqref{eq:pm:strong} holds pointwise, which then allows the following derivation.  We multiply \eqref{eq:darcy} by a vector-valued test function $\bomega$, and \eqref{eq:masscont} by a scalar test function $v$, and integrate over $E$:
 \begin{subequations}
-\label{eq:pm:weak:early}
+\label{eq:pm:elementweak}
 \begin{align}
-\int_\Omega \bsigma\cdot \bomega\,\dx - \int_\Omega \frac{1}{\mu} \left(c \rho + \rho g z\right) \Div(k\rho\bomega)\,\dx + \int_{\partial\Omega} \frac{k}{\mu} \rho \left(c \rho + \rho g z\right) \bomega\cdot\bn\,\ds &= 0 \label{eq:pm:weak:early:darcy}\\
-\int_\Omega (\Div \bsigma) v\,\dx &= 0
+\int_E \bsigma\cdot \bomega\,\dx + \int_E \frac{k}{\mu} \rho \grad\left(c \rho + \rho g z\right) \cdot \bomega\,\dx &= 0 \\
+\int_E (\Div \bsigma) v\,\dx &= 0
 \end{align}
 \end{subequations}
-Notice that $k$ now appears inside a divergence in the first equation.
+Here $\dx = dx\,dz$ denotes the area integration element.  Also let $\ds$ denote the integration element over $\partial\Omega$ and $\bn$ the outward normal unit vector on $\partial E$.
 
-% FIXME: k and rho are discontinuous (and spatial varying) fields, so it is bad that they are inside the divergence
-
-In order to write a final weak form, suitable for a Firedrake \citep{Ham2023}, we must choose suitable boundary conditions.  Along the part of the boundary $\partial\Omega$ where the pressure (or density) is determined, which we denote $\Gamma_0 \subset \partial\Omega$, the boundary integral in \eqref{eq:pm:weak:early:darcy} becomes a known linear functional on the test function $\bomega$.  The known value of the density in these location is denoted $\rho_0$.  On the remainder of the boundary we must impose the essential requirement that $\bomega\cdot \bn=0$ on the function space; this is done through Firedrake's \verb|DirichletBC()| command.  The resulting final weak form can be written as follows, with the known pressure boundary condition on the right:
+The physical $k$ field is discontinuous.  For the FE method we will assume that the mesh edges include any such discontinuities of $k$.  Thus if $E$ is an element in the mesh, we will assume that all quantities in \eqref{eq:pm:elementweak}, and in the equations below, are continuous over $E$.  Also recall the divergence theorem
+    $$\int_E \Div \bX\,\dx = \int_{\partial E} \bX\cdot \bn\,\ds$$
+and the product rule $\Div(f\bX) = \grad f \cdot \bX + f \Div \bX$.  Then integration by parts uses these facts to remove the derivatives from the pressure head $c\rho+\rho g z$.  We get a new form
 \begin{subequations}
-\label{eq:pm:weak}
+\label{eq:elementweak:early}
 \begin{align}
-\int_\Omega \bsigma\cdot \bomega\,\dx - \int_\Omega \frac{1}{\mu} \left(c \rho + \rho g z\right) \Div(k\rho\bomega)\,\dx &= -\int_{\Gamma_0} \frac{k}{\mu} \rho_0 \left(c \rho_0 + \rho_0 g z\right) \bomega\cdot\bn\,\ds \label{eq:pm:weak:darcy}\\
-\int_\Omega (\Div \bsigma) v\,\dx &= 0
+\int_E \bsigma\cdot \bomega\,\dx - \int_E \frac{1}{\mu} \left(c \rho + \rho g z\right) \Div(k\rho\bomega)\,\dx + \int_{\partial E} \frac{k}{\mu} \rho \left(c \rho + \rho g z\right) \bomega\cdot\bn\,\ds &= 0 \label{eq:elementweak:early:darcy} \\
+\int_E (\Div \bsigma) v\,\dx &= 0 \label{eq:elementweak:early:masscont}
 \end{align}
 \end{subequations}
-The first equation in this system weakly enforces Darcy's law and the second enforces conservation of mass.
 
-To implement the above in Firedrake we must choose finite element spaces for $\bsigma$ and $\rho$.  To provide exact discrete mass conservation the vector fields $\bsigma$ should come from a space in which normal vectors are continuous across element boundaries.  The space for $\rho$ can be discontinuous.  Thus, for example, we may use the lowest-order Raviart-Thomas and DG pair, over quadrilateral elements, which is stable for the mixed Poisson formulation:
+For convenience define the smooth field
+\begin{equation}
+C(z) = \frac{c + g z}{\mu},
+\end{equation}
+and also let
+\begin{equation}
+\hat\rho = \frac{1}{2}(\rho + |\rho|)  \label{eq:rhoplus}
+\end{equation}
+be the positive part of $\rho$.  Since $\hat\rho=\rho$ for the continuum solution, equation \eqref{eq:elementweak:early:darcy} is equivalent to
+\begin{equation}
+\int_E \bsigma\cdot \bomega\,\dx - \int_E C \hat\rho \Div(k\rho\bomega)\,\dx + \int_{\partial E} C \rho^2 \, k \bomega\cdot\bn\,\ds = 0 \label{eq:darcy:second}
+\end{equation}
+
+Now we sum equations \eqref{eq:darcy:second} and \eqref{eq:elementweak:early:masscont} over all elements $E$ in the mesh.  The mesh (triangulation), denoted $\cT_h$, is assumed to exactly cover the domain: $\bigcup_{E\in\cT_h} \bar E = \bar \Omega$.  Thus the original continuum solution also solves the following system:
+\begin{subequations}
+\label{eq:weak:early}
+\begin{align}
+\int_\Omega \bsigma\cdot \bomega\,\dx - \int_\Omega C \hat\rho \Div(k\rho\bomega)\,\dx + \sum_{E\in\cT_h} \int_{\partial E} C \rho^2 \, k \bomega\cdot\bn\,\ds &= 0 \label{eq:weak:early:darcy} \\
+\int_\Omega (\Div \bsigma) v\,\dx &= 0 \label{eq:weak:early:masscont}
+\end{align}
+\end{subequations}
+
+Let $\Gamma_0$ be the union of internal edges.  Then
+\begin{equation}
+\bigcup_{E\in\cT_h} \partial E = \Gamma_0 \cup \Gamma_D \cup \Gamma_N.
+\end{equation}
+Recalling boundary conditions \eqref{eq:strongbcs}, along $\Gamma_D$ the value $\rho=\rho_D$ is given.  The Neumann boundary condition is actually essential, so it involves a modification of the function space in which $\bsigma$ lives; the implementation is addressed below, but in any case these parts of the boundary interval vanish.  However, along edges in the internal boundary $\Gamma_0$ there are two elements adjacent to each edge.  Following standard conventions \citep{Arnold2002,Ham2023}, for each internal edge $e\in\Gamma_0$ there is an arbitrary choice of ``$+$'' and ``$-$'' adjacent elements.  Thus \eqref{eq:weak:early} becomes
+\begin{subequations}
+\label{eq:weak:second}
+\begin{align}
+\int_\Omega \bsigma\cdot \bomega\,\dx - \int_\Omega C \hat\rho \Div(k\rho\bomega)\,\dx + &\sum_{e\in\Gamma_0} \int_e \left(C_+ \rho_+^2 \, k_+ \bomega_+\cdot\bn_+ + C_- \rho_-^2 \, k_- \bomega_-\cdot\bn_-\right)\,\ds \label{eq:weak:second:darcy} \\
+   &= -\int_{\Gamma_D} C \rho_D^2 \, k \bomega\cdot\bn\,\ds \notag \\
+\int_\Omega (\Div \bsigma) v\,\dx &= 0 \label{eq:weak:second:masscont}
+\end{align}
+\end{subequations}
+
+Based on experiments on the case of a linear Poisson equation with discontinuous coefficients, we believe that the internal edge integrals should be re-formulated as follows using standard notation \citep{Arnold2002}.  For a scalar function $f$ defined on the closure of each element let $\{f\} = \frac{1}{2} (f_+ + f_-)$ denote the average across the edge.  For a vector-valued function $\bv$ let $\jump{\bv} = \bv_+ \cdot \bn_+ + \bv_- \cdot \bn_-$ denote the jump across the edge, a scalar.  Then the quantities for which the continuum solution is expected to not have a jump are written as averages and the known jump in $k$ is explicitly stated.  The result is the weak form system which we plan to implement: 
+\begin{subequations}
+\label{eq:weak}
+\begin{align}
+\int_\Omega \bsigma\cdot \bomega\,\dx - \int_\Omega C \hat\rho \Div(k\rho\bomega)\,\dx + \sum_{e\in\Gamma_0} \int_e \{C \rho^2\} \jump{k \bomega}\,\ds &= -\int_{\Gamma_D} C \rho_D^2 \, k \bomega\cdot\bn\,\ds \label{eq:weak:darcy} \\
+\int_\Omega (\Div \bsigma) v\,\dx &= 0 \label{eq:weak:masscont}
+\end{align}
+\end{subequations}
+
+
+\section{Finite element implementation and solution}
+
+FIXME implementation in which the flux $\bsigma$ is continuous across faces (edges) of the elements but the density distribution is approximated by a discontinuous scalar field
+
+FIXME  On the remainder of the boundary we must impose the essential requirement that $\bomega\cdot \bn=0$ on the function space; this is done through Firedrake's \verb|DirichletBC()| command.
+
+FIXME The first equation in this system weakly enforces Darcy's law and the second enforces conservation of mass.
+
+FIXME To implement the above in Firedrake we must choose finite element spaces for $\bsigma$ and $\rho$.  To provide exact discrete mass conservation the vector fields $\bsigma$ should come from a space in which normal vectors are continuous across element boundaries.  The space for $\rho$ can be discontinuous.  Thus, for example, we may use the lowest-order Raviart-Thomas and DG pair which is stable for the mixed Poisson formulation:
 \begin{Verbatim}[fontsize=\small,frame=lines]
-S = FunctionSpace(mesh, 'RTCF', 1)
+S = FunctionSpace(mesh, 'RT', 1)
 H = FunctionSpace(mesh, 'DG', 0)
 W = S * H
 w = Function(W)
 sigma, rho = split(w)
 omega, v = TestFunctions(W)
 \end{Verbatim}
-Weak form \eqref{eq:pm:weak} then corresponds to the UFL code
+Weak form \eqref{eq:weak} then corresponds to the UFL code
 \begin{Verbatim}[fontsize=\small,frame=lines]
-F = dot(sigma, omega) * dx \
-    - (1.0/mu) * (c * rho + rho * g * z) * div(k * rho * omega) * dx \
-    + (1.0/mu) * k * rho0 * (c * rho0 + rho0 * g * z) * dot(omega, n) * ds(i) \
-    + div(sigma) * v * dx
+FIXME
 \end{Verbatim}
 Here \verb|n = FacetNormal(mesh)|.  Note that \verb|ds(i)| requires indices \verb|i| for the appropriate boundary segments.
 
@@ -173,9 +239,7 @@ These \verb|assemble| expressions compute mass flux integrals
     $$\int_{\Gamma_i} \sigma\cdot \bn\,\ds = \int_{\Gamma_i} \rho \bq\cdot \bn\,\ds$$
 over a particular side $\Gamma_i$.  In a typical run we get fluxes which balance to rounding error:
 \begin{Verbatim}[fontsize=\small,frame=leftline]
-  flux out of top    =  1.315019e+01
-  flux into bottom   =  1.315019e+01
-  imbalance          = -1.953993e-14
+FIXME
 \end{Verbatim}
 
 
