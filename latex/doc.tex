@@ -134,84 +134,56 @@ The equations and boundary conditions are
 \begin{subequations}
 \label{eq:pm:strongu}
 \begin{align}
-\bsigma &= - k \left(2 u \grad G + G \grad u\right) \\
-\Div \bsigma &= 0 \\
-u|_{\Gamma_D} &= \rho_D^2/2 \\
-(\bsigma\cdot \bn)|_{\Gamma_N} &= 0
+\bsigma &= - k \left(2 u \grad G + G \grad u\right) & &\text{on } \Omega \label{eq:pm:strongu:darcy} \\
+\Div \bsigma &= 0 & & \label{eq:pm:strongu:masscont} \\
+u &= \rho_D^2/2 & &\text{on } \Gamma_D  \label{eq:pm:strongu:bcD} \\
+\bsigma\cdot \bn &= 0 & &\text{on } \Gamma_N  \label{eq:pm:strongu:bcN} 
 \end{align}
 \end{subequations}
-Here $\grad G$ acts as a velocity to make \eqref{eq:pm:strongu} a linear, steady-state advection-diffusion problem.  Standard theory for such equations applies to \eqref{eq:pm:strongu} to show $u(x,y,z)$ exists weakly and classically \citep[Chapter 6]{Evans2010}, with $u>0$ everywhere if $\rho_D>0$ on $\Gamma_D$ of positive measure.  The density $\rho$ and pressure $P$ are easily recovered via \eqref{eq:pm:defu} and \eqref{eq:ideal} when $u\ge 0$.
 
-\section{Weak form allowing discontinuous permeability}
+System \eqref{eq:pm:strongu} is a linear, steady-state, advection-diffusion problem in which $\grad G$ acts as a velocity.  Standard theory for such problems shows that $u(x,y,z)$ exists both weakly and classically \citep[Chapter 6]{Evans2010}.  The maximum principle shows $u>0$ everywhere if $\Gamma_D$ has positive measure and $\rho_D>0$.  The density $\rho$ and pressure $P$ are easily recovered via \eqref{eq:pm:defu}, \eqref{eq:ideal} when $u\ge 0$.
 
-We will solve system \eqref{eq:pm:strong} by a conservative mixed finite element (FE) method \citep{Boffi2013}.  In this section we derive the weak form needed for this FE method via an element-wise weak form.  This derivation allows the permeability field to be discontinuous across element edges.
+\section{Weak form (allowing discontinuous permeability)}
 
-For the moment let $E$ be any well-behaved open subset of $\Omega$ with piecewise-$C^1$ boundary, and we assume that the exact, continuum solution $\bsigma$ and $\rho$ of \eqref{eq:pm:strong} are sufficiently continuous/smooth so that \eqref{eq:pm:strong} holds pointwise, which then allows the following derivation.  We multiply \eqref{eq:darcy} by a vector-valued test function $\bomega$, and \eqref{eq:masscont} by a scalar test function $v$, and integrate over $E$:
+We will solve system \eqref{eq:pm:strongu} by a conservative mixed finite element (FE) method \citep{Boffi2013}.  In this section we derive the weak form needed for this FE method via an element-wise weak form.  This derivation allows the permeability field to be discontinuous across element edges, an it makes the conservation property of the FE scheme manifestly clear.
+
+Let $E$ be any well-behaved open subset of $\Omega$ with piecewise-$C^1$ boundary.  Assume that the exact, continuum solution $\bsigma,u$ of \eqref{eq:pm:strongu} are sufficiently continuous/smooth so that \eqref{eq:pm:strongu} holds pointwise, which then allows the following derivation.  We multiply \eqref{eq:pm:strongu:darcy} by a vector-valued test function $\bomega$, and \eqref{eq:pm:strongu:masscont} by a scalar test function $v$, and integrate over $E$:
 \begin{subequations}
 \label{eq:pm:elementweak}
 \begin{align}
-\int_E \bsigma\cdot \bomega\,\dx + \int_E \frac{k}{\mu} \rho \grad\left(c \rho + \rho g z\right) \cdot \bomega\,\dx &= 0 \\
-\int_E (\Div \bsigma) v\,\dx &= 0
+\int_E \bsigma\cdot \bomega\,\dx + \int_E 2 k u \grad G \cdot \bomega\,\dx + \int_E k G \grad u \cdot \bomega\,\dx &= 0 \label{eq:pm:elementweak:darcy} \\
+\int_E (\Div \bsigma) v\,\dx &= 0 \label{eq:pm:elementweak:masscont}
 \end{align}
 \end{subequations}
-Here $\dx = dx\,dz$ denotes the area integration element.  Also let $\ds$ denote the integration element over $\partial\Omega$ and $\bn$ the outward normal unit vector on $\partial E$.
+Here $\dx = dx\,dy\,dz$ denotes the volume measure, or the area measure $\dx = dx\,dz$ in 2D.
 
-The physical $k$ field is discontinuous.  For the FE method we will assume that the mesh edges include any such discontinuities of $k$.  Thus if $E$ is an element in the mesh, we will assume that all quantities in \eqref{eq:pm:elementweak}, and in the equations below, are continuous over $E$.  Also recall the divergence theorem
-    $$\int_E \Div \bX\,\dx = \int_{\partial E} \bX\cdot \bn\,\ds$$
-and the product rule $\Div(f\bX) = \grad f \cdot \bX + f \Div \bX$.  Then integration by parts uses these facts to remove the derivatives from the pressure head $c\rho+\rho g z$.  We get a new form
-\begin{subequations}
-\label{eq:elementweak:early}
-\begin{align}
-\int_E \bsigma\cdot \bomega\,\dx - \int_E \frac{1}{\mu} \left(c \rho + \rho g z\right) \Div(k\rho\bomega)\,\dx + \int_{\partial E} \frac{k}{\mu} \rho \left(c \rho + \rho g z\right) \bomega\cdot\bn\,\ds &= 0 \label{eq:elementweak:early:darcy} \\
-\int_E (\Div \bsigma) v\,\dx &= 0 \label{eq:elementweak:early:masscont}
-\end{align}
-\end{subequations}
-
-For convenience define the smooth field
+The permeability field $k(x,y,z)$ may be discontinuous, but for the purposes of the following FE method we will assume that the element faces (edges in 2D) include any of its discontinuities.  Thus if $E$ is an (open) element in the mesh, we will assume that all functions and gradients in \eqref{eq:pm:elementweak} are continuous over $E$.  On $\partial E$, let $\ds$ denote the boundary measure and $\bn$ the outward normal unit vector.  Recall the divergence theorem $\int_E \Div \bX\,\dx = \int_{\partial E} \bX\cdot \bn\,\ds$, and the product rule $\Div(f\bX) = \grad f \cdot \bX + f \Div \bX$.  Using these tools, integration by parts removes the derivative from $u$.  This rewrites \eqref{eq:pm:elementweak:darcy} as
 \begin{equation}
-C(z) = \frac{c + g z}{\mu},
-\end{equation}
-and also let
-\begin{equation}
-\hat\rho = \frac{1}{2}(\rho + |\rho|)  \label{eq:rhoplus}
-\end{equation}
-be the positive part of $\rho$.  Since $\hat\rho=\rho$ for the continuum solution, equation \eqref{eq:elementweak:early:darcy} is equivalent to
-\begin{equation}
-\int_E \bsigma\cdot \bomega\,\dx - \int_E C \hat\rho \Div(k\rho\bomega)\,\dx + \int_{\partial E} C \rho^2 \, k \bomega\cdot\bn\,\ds = 0 \label{eq:darcy:second}
+\int_E \bsigma\cdot \bomega\,\dx + \int_E 2 k u \grad G \cdot \bomega\,\dx - \int_E u \Div\left(k G \bomega\right)\,\dx + \int_{\partial E} k u \bomega\cdot\bn\,\ds = 0 \label{eq:elementweak:darcy:early}
 \end{equation}
 
-Now we sum equations \eqref{eq:darcy:second} and \eqref{eq:elementweak:early:masscont} over all elements $E$ in the mesh.  The mesh (triangulation), denoted $\cT_h$, is assumed to exactly cover the domain: $\bigcup_{E\in\cT_h} \bar E = \bar \Omega$.  Thus the original continuum solution also solves the following system:
-\begin{subequations}
-\label{eq:weak:early}
-\begin{align}
-\int_\Omega \bsigma\cdot \bomega\,\dx - \int_\Omega C \hat\rho \Div(k\rho\bomega)\,\dx + \sum_{E\in\cT_h} \int_{\partial E} C \rho^2 \, k \bomega\cdot\bn\,\ds &= 0 \label{eq:weak:early:darcy} \\
-\int_\Omega (\Div \bsigma) v\,\dx &= 0 \label{eq:weak:early:masscont}
-\end{align}
-\end{subequations}
-
-Let $\Gamma_0$ be the union of internal edges.  Then
+We assume that the mesh (triangulation) $\cT_h$ exactly covers the domain: $\bigcup_{E\in\cT_h} \bar E = \bar \Omega$.  Consider all the faces (edges) in the mesh.  If $\Gamma_0$ is the union of the internal faces then
 \begin{equation}
 \bigcup_{E\in\cT_h} \partial E = \Gamma_0 \cup \Gamma_D \cup \Gamma_N.
 \end{equation}
-Recalling boundary conditions \eqref{eq:strongbcs}, along $\Gamma_D$ the value $\rho=\rho_D$ is given.  The Neumann boundary condition is actually essential, so it involves a modification of the function space in which $\bsigma$ lives; the implementation is addressed below, but in any case these parts of the boundary interval vanish.  However, along edges in the internal boundary $\Gamma_0$ there are two elements adjacent to each edge.  Following standard conventions \citep{Arnold2002,Ham2023}, for each internal edge $e\in\Gamma_0$ there is an arbitrary choice of ``$+$'' and ``$-$'' adjacent elements.  Thus \eqref{eq:weak:early} becomes
-\begin{subequations}
-\label{eq:weak:second}
+By \eqref{eq:pm:strongu:bcD}, in integrals along $\Gamma_D$ the value $u=\rho_D^2/2$ is given.  The Neumann condition \eqref{eq:pm:strongu:bcN} along $\Gamma_N$ is actually essential for $\bsigma\cdot\bn$, so it involves a modification of the function space in which $\bsigma$ and $\bomega$ live.  The implementation is addressed below, but we have $\int_{\Gamma_N} k u \bomega\cdot\bn\,\ds = 0$ because $\bomega\cdot\bn=0$ along $\Gamma_N$.
+
+Now we sum equations \eqref{eq:elementweak:darcy:early} and \eqref{eq:pm:elementweak:masscont} over all elements $E$ in the mesh.  Regarding the $\partial E$ integrals in \eqref{eq:elementweak:darcy:early}, it remains to address the internal boundary $\Gamma_0$.  Each face (edge) $e \in \Gamma_0$ has two adjacent elements.  Following standard conventions \citep{Arnold2002,Ham2023}, there is an arbitrary choice of ``$+$'' and ``$-$'' adjacent elements, thus:
 \begin{align}
-\int_\Omega \bsigma\cdot \bomega\,\dx - \int_\Omega C \hat\rho \Div(k\rho\bomega)\,\dx + &\sum_{e\in\Gamma_0} \int_e \left(C_+ \rho_+^2 \, k_+ \bomega_+\cdot\bn_+ + C_- \rho_-^2 \, k_- \bomega_-\cdot\bn_-\right)\,\ds \label{eq:weak:second:darcy} \\
-   &= -\int_{\Gamma_D} C \rho_D^2 \, k \bomega\cdot\bn\,\ds \notag \\
-\int_\Omega (\Div \bsigma) v\,\dx &= 0 \label{eq:weak:second:masscont}
+\int_\Omega \bsigma\cdot \bomega\,\dx + &\int_\Omega 2 k u \grad G \cdot \bomega\,\dx - \int_\Omega u \Div\left(k G \bomega\right)\,\dx  \label{eq:elementweak:darcy:second} \\
+&+ \sum_{e\in\Gamma_0} \int_e \left(k^+ u^+ \bomega^+\cdot\bn^+ + k^- u^- \bomega^-\cdot\bn^-\right)\,\ds = - \int_{\Gamma_D} \frac{k}{2} \rho_D^2 \bomega\cdot\bn\,\ds \notag
+\end{align}
+
+Based on experiments, we believe that the internal edge integrals should be re-formulated as follows using standard notation \citep{Arnold2002}.  For a scalar function $f$ defined on the closure of each element let $\{f\} = \frac{1}{2} (f_+ + f_-)$ denote the average across the edge.  For a vector-valued function $\bv$ let $\jump{\bv} = \bv_+ \cdot \bn_+ + \bv_- \cdot \bn_-$ denote the jump across the edge, a scalar.  Then the quantities for which the continuum solution is expected to \emph{not} have a jump are written as averages, while the known jump in $k$ is explicitly stated.  The result is the weak form system, for $\bsigma$ and $u$, which we plan to implement after identifying suitable FE function spaces: 
+\begin{subequations}
+\label{eq:weaku}
+\begin{align}
+\int_\Omega \bsigma\cdot \bomega\,\dx + &\int_\Omega 2 k u \grad G \cdot \bomega\,\dx - \int_\Omega u \Div\left(k G \bomega\right)\,\dx  \label{eq:weaku:darcy} \\
+&+ \sum_{e\in\Gamma_0} \int_e \{u\} \jump{k\bomega}\,\ds = - \int_{\Gamma_D} \frac{k}{2} \rho_D^2 \bomega\cdot\bn\,\ds \qquad \text{for all } \bomega \notag \\
+\int_\Omega (\Div \bsigma) v\,\dx &= 0 \qquad \text{for all } v  \label{eq:weaku:masscont}
 \end{align}
 \end{subequations}
-
-Based on experiments on the case of a linear Poisson equation with discontinuous coefficients, we believe that the internal edge integrals should be re-formulated as follows using standard notation \citep{Arnold2002}.  For a scalar function $f$ defined on the closure of each element let $\{f\} = \frac{1}{2} (f_+ + f_-)$ denote the average across the edge.  For a vector-valued function $\bv$ let $\jump{\bv} = \bv_+ \cdot \bn_+ + \bv_- \cdot \bn_-$ denote the jump across the edge, a scalar.  Then the quantities for which the continuum solution is expected to not have a jump are written as averages and the known jump in $k$ is explicitly stated.  The result is the weak form system which we plan to implement: 
-\begin{subequations}
-\label{eq:weak}
-\begin{align}
-\int_\Omega \bsigma\cdot \bomega\,\dx - \int_\Omega C \hat\rho \Div(k\rho\bomega)\,\dx + \sum_{e\in\Gamma_0} \int_e \{C \rho^2\} \jump{k \bomega}\,\ds &= -\int_{\Gamma_D} C \rho_D^2 \, k \bomega\cdot\bn\,\ds \label{eq:weak:darcy} \\
-\int_\Omega (\Div \bsigma) v\,\dx &= 0 \label{eq:weak:masscont}
-\end{align}
-\end{subequations}
-
+The first equation in this system weakly enforces Darcy's law, and the second weakly enforces conservation of mass.  The density $\rho$ and pressure $P$ are recovered from $u$ via \eqref{eq:pm:defu} and \eqref{eq:ideal}.
 
 \section{Finite element implementation and solution}
 
@@ -219,38 +191,31 @@ FIXME implementation in which the flux $\bsigma$ is continuous across faces (edg
 
 FIXME  On the remainder of the boundary we must impose the essential requirement that $\bomega\cdot \bn=0$ on the function space; this is done through Firedrake's \verb|DirichletBC()| command.
 
-FIXME The first equation in this system weakly enforces Darcy's law and the second enforces conservation of mass.
-
 FIXME To implement the above in Firedrake we must choose finite element spaces for $\bsigma$ and $\rho$.  To provide exact discrete mass conservation the vector fields $\bsigma$ should come from a space in which normal vectors are continuous across element boundaries.  The space for $\rho$ can be discontinuous.  Thus, for example, we may use the lowest-order Raviart-Thomas and DG pair which is stable for the mixed Poisson formulation:
 \begin{Verbatim}[fontsize=\small,frame=lines]
 S = FunctionSpace(mesh, 'RT', 1)
 H = FunctionSpace(mesh, 'DG', 0)
 W = S * H
 w = Function(W)
-sigma, rho = split(w)
+sigma, u = split(w)
 omega, v = TestFunctions(W)
 \end{Verbatim}
-Weak form \eqref{eq:weak} then corresponds to the UFL code
+Weak form \eqref{eq:weaku} then corresponds to the UFL code
 \begin{Verbatim}[fontsize=\small,frame=lines]
 FIXME
 \end{Verbatim}
 Here \verb|n = FacetNormal(mesh)|.  Note that \verb|ds(i)| requires indices \verb|i| for the appropriate boundary segments.
 
-To solve the equations we apply Newton's method \citep{Kelley2003}.  Newton's method is managed by the SNES component of PETSc \citep{Balay2023}.  Some useful options are to use the default ``line search'' Newton solver \texttt{newtonls} but with the (non-default) back-tracking type of line search.  The linear Newton step equation are solved by a sparse direct matrix method \citep{Amestoy2001}.  Also we ask for feedback on the success or failure of the solver:
+To solve the equations FIXME by a sparse direct matrix method \citep{Amestoy2001}.
 \begin{Verbatim}[fontsize=\small,frame=lines]
 solve(F == 0, w, bcs=[BCs,],
-      solver_parameters = {'snes_type': 'newtonls',
-                           'snes_linesearch_type': 'bt',
-                           'snes_rtol': 1.0e-5,
-                           'snes_monitor': None,
-                           'snes_converged_reason': None,
-                           'ksp_type': 'preonly',
+      solver_parameters = {'ksp_type': 'preonly',
                            'pc_type': 'lu',
                            'pc_factor_mat_solver_type': 'mumps'})
 \end{Verbatim}
 A more advanced iterative, block-wise, and multigrid solver is possible \citep[e.g.][]{Bueler2021}, but it will require careful development.
 
-Confirmation of global mass conservation is straightforward.  For example, on a rectangular domain with top side index \verb|4| and bottom side index \verb|3|:
+FIXME Confirmation of global mass conservation is straightforward.  For example, on a rectangular domain with top side index \verb|4| and bottom side index \verb|3|:
 \begin{Verbatim}[fontsize=\small,frame=lines]
 topflux = assemble(dot(sigma,n) * ds(4))
 bottomflux = assemble(dot(sigma,n) * ds(3))

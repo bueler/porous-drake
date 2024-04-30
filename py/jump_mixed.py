@@ -1,4 +1,4 @@
-# Solve llinear Poisson equation with discontinuous diffusivity
+# Solve linear Poisson equation with discontinuous diffusivity
 #   - Div (D(x,y) grad(u)) = 1
 # with boundary values
 #   u = 0                 left, right (x=0,1)
