@@ -60,19 +60,21 @@ style=apa, natbib=true,
 
 \thispagestyle{empty}
 
-\section{A (draft) porous medium model for Darcy-type gas flow}
+\section{A porous medium model for Darcy-type gas flow}
 
-Suppose $\Omega$ is a 2-dimensional domain with well-behaved boundary, such as a rectangle or other polygon.  We will use $x$ for the horizontal and $z$, measured positive upward, for the vertical coordinate.  Within $\Omega$ we assume there is a matrix of porous material with spatially-variable porosity $\phi(x,z)$ and permeability $k(x,z)$, but these are assumed independent of time.  An ideal gas flows through the medium.  We will take various properties of this gas to be positive constants: $R$ is the gas constant, $T$ is the absolute temperature, and $M$ is the molar mass.  The ideal gas law then says the density $\rho$ and pressure $P$ are proportional:
+Suppose $\Omega$ is a 2D or 3D domain with well-behaved boundary, such as a rectangle or other polygon in 2D, or a polyhedron in 3D.  We will use $x,y$ for the horizontal coordinates and $z$ for the vertical coordinate.  Note $z$ is measured positive upward, and in 2D we use only $x,z$.
+
+Within $\Omega$ we assume there is a matrix of porous material with spatially-variable porosity $\phi(x,y,z)$ and permeability $k(x,y,z)$; these are assumed independent of time.  An ideal gas flows through the medium, and we will take the various properties of this gas to be positive constants: $R$ is the gas constant, $T$ is the absolute temperature, and $M$ is the molar mass.  The ideal gas law then says the density $\rho(t,x,y,z)$ and pressure $P(t,x,y,z)$ are proportional:
 \begin{equation}
 RT \rho = M P.  \label{eq:ideal}
 \end{equation}
 Let $c = RT/M$, a positive constant.
 
-We assume that the gas flow satisfies Darcy's law [REF?], driven by the deviation of gas pressure from the (litho)static distribution.  The lithostatic distribution is the pressure field $P_0=-\rho g z$ for which there would be no flow; here $g$ is the (constant) acceleration of gravity.  Thus
+We assume that the gas flow satisfies Darcy's law \citep{Fowler2011}.  This flow is driven by the gradient of the deviation of gas pressure from the (litho)static distribution.  The lithostatic distribution is the pressure field $P_0=-\rho g z$ for which there would be no flow; here $g$ is the (constant) acceleration of gravity.  Thus
 \begin{equation}
 P-P_0 = c\rho+\rho g z \label{eq:drivingpressure}
 \end{equation}
-is the driving distribution, the pressure head.  Adding mass conservation, the following system of equations therefore applies to determing the evolution of the density $\rho(t,x,z)$, in SI units of $\text{kg}\,\text{m}^{-3}$, and (vector) volumetric flux $\bq(t,x,z)$, in units $\text{m}^3\,\text{m}^{-2}\,\text{s}^{-1} = \text{m}\,\text{s}^{-1}$:
+is the driving distribution, the pressure head.  Because mass is conserved, the following system of equations determines the evolution of the density $\rho(t,x,y,z)$, in SI units of $\text{kg}\,\text{m}^{-3}$, and (vector) volumetric flux $\bq(t,x,y,z)$, in units $\text{m}^3\,\text{m}^{-2}\,\text{s}^{-1} = \text{m}\,\text{s}^{-1}$:
 \begin{subequations}
 \label{eq:pmtime}
 \begin{align}
@@ -80,11 +82,11 @@ is the driving distribution, the pressure head.  Adding mass conservation, the f
 \phi \frac{\partial \rho}{\partial t} + \Div \left(\rho\, \bq\right) &= 0. \label{eq:pmtime:masscont}
 \end{align}
 \end{subequations}
-Here $\mu$ is the dynamic viscosity of the gas, again taken to be constant.
+In \eqref{eq:pmtime:darcy} $\mu$ is the dynamic viscosity of the gas, again taken to be constant.
 
-Several observations can be made.  To be physical the gas density must be non-negative: $\rho\ge 0$.  Relative to the classic mass continuity statement ``$\partial\rho/\partial t + \Div(\rho \bu)=0$'' \citep{Tadmor2012}, where $\bu$ is the fluid velocity, \eqref{eq:pmtime:masscont} is scaled with the porosity.  In fact this porosity is implicit in the definition of $\bq$ as a gas volume per unit area of (a face of) the porous matrix, equivalently $\bq$ is related to $\bu$ by $\bq = \phi \bu$, that is, via the dimensionless porosity.  Note that, while the velocity $\bu$ may be helpful in diagnosing the solution, it is not needed to state the model.
+Several observations can be made.  Physically, the gas density must be non-negative: $\rho\ge 0$.  Relative to the classic mass continuity statement ``$\partial\rho/\partial t + \Div(\rho \bv)=0$'' \citep[for example]{Tadmor2012}, where $\bv$ is the fluid velocity, note that \eqref{eq:pmtime:masscont} is scaled with the porosity $\phi$.  The dimensionless coefficent $\phi$ is also implicit in the definition of $\bq$, as a gas volume per unit area of any face of the porous matrix, because $\bq = \phi \bv$.  However, while the velocity $\bv$ may be helpful in diagnosing the solution, it is not required when stating the model.
 
-It is straightforward to eliminate the flux $\bq$ if desired:
+It is straightforward to eliminate the flux $\bq$, if this is desired:
 \begin{equation}
 \phi \frac{\partial \rho}{\partial t} - \Div \left(\frac{k}{\mu} \rho \grad\left(c \rho + \rho g z\right)\right) = 0. \label{eq:pmtime:primal}
 \end{equation}
@@ -92,13 +94,13 @@ This form is comparable to the better-known heat equation
 \begin{equation}
 \frac{\partial u}{\partial t} - \Div(\grad u) = 0. \qquad \text{\emph{(heat equation)}}\label{eq:heattime:primal}
 \end{equation}
-An important property of \eqref{eq:heattime:primal} is that the operator $\Div \grad = \grad^2$ acts as an invertible matrix when finding the solution $u$.  However, since $\rho$ appears as a flux coefficient in \eqref{eq:pmtime:primal}, invertibility is lost if $\rho\to 0$ somewhere.  This ``degeneration'' of the diffusivity is a well-known property \citep{Vazquez2007} of the porous medium equation \eqref{eq:pmtime:primal}; it will influence the numerical solution method below.
+An important property of \eqref{eq:heattime:primal} is that the operator $\Div \grad = \grad^2$ acts as an invertible matrix when finding the solution $u$.  However, since $\rho$ appears as a flux coefficient in \eqref{eq:pmtime:primal}, invertibility is lost in \eqref{eq:pmtime:primal} if $\rho\to 0$ somewhere.  Such ``degeneration'' of the diffusivity is a well-known concern with the porous medium equation \eqref{eq:pmtime:primal} \citep[for example]{Vazquez2007}, and it will influence the numerical solution method below.
 
-System \eqref{eq:pmtime} is time dependent, but setting $\partial \rho/\partial t = 0$ yields the (mixed) strong form for the steady-state problem.  First we define the (conserved) mass flux in \eqref{eq:pmtime:masscont} as
+System \eqref{eq:pmtime} is time dependent, but setting $\partial \rho/\partial t = 0$ yields the steady-state model.  First, for \eqref{eq:pmtime:masscont} we define the (conserved) mass flux
 \begin{equation}
 \bsigma = \rho \bq, \label{eq:massflux}
 \end{equation}
-with units of $\text{kg}\,\text{m}^{-2}\,\text{s}^{-1}$.  Now we write the strong form in terms of the conserved density $\rho$ and its flux $\bsigma$:
+with units of $\text{kg}\,\text{m}^{-2}\,\text{s}^{-1}$.  The steady-state, strong form of our model can then be written in terms of the conserved density $\rho$ and its flux $\bsigma$:
 \begin{subequations}
 \label{eq:pm:strong}
 \begin{align}
@@ -106,17 +108,39 @@ with units of $\text{kg}\,\text{m}^{-2}\,\text{s}^{-1}$.  Now we write the stron
 \Div \bsigma &= 0 \label{eq:masscont}
 \end{align}
 \end{subequations}
-Not we are assuming no mass sources or sinks, as otherwise there would be a function on the right of \eqref{eq:masscont}.
+Note that we are assuming no mass sources or sinks, as otherwise there would be a function on the right side of \eqref{eq:masscont}.
 
-Suitable boundary conditions must apply to system \eqref{eq:pm:strong}.  Along the ``Dirichlet'' part of the boundary, denoted $\Gamma_D \subset \partial\Omega$, the density (or pressure) is given.  On the remainder of the boundary $\Gamma_N = \partial\Omega \setminus \Gamma_D$, the ``Neumann'' boundary, the normal mass flux is zero. 
+Suitable boundary conditions must apply, to go along with system \eqref{eq:pm:strong}.  On the ``Dirichlet'' part of the boundary, denoted $\Gamma_D \subset \partial\Omega$, the density (or pressure) is given by a continuous function $\rho_D(x,y,z)$.  On the remainder of the boundary $\Gamma_N = \partial\Omega \setminus \Gamma_D$, the ``Neumann'' boundary, the normal mass flux is zero. 
 \begin{subequations}
 \label{eq:strongbcs}
 \begin{align}
-\rho|_{\Gamma_D}               &= \rho_D(x,z) \\
+\rho|_{\Gamma_D}               &= \rho_D \\
 (\bsigma\cdot \bn)|_{\Gamma_N} &= 0
 \end{align}
 \end{subequations}
-It is easy to extend the model for provided values of the flux: $(\bsigma\cdot \bn)|_{\Gamma_N}= \sigma_N(x,z)$.
+It is easy to extend the model with provided values of the mass flux, i.e.~$(\bsigma\cdot \bn)|_{\Gamma_N}= \sigma_N$ where $\sigma_N$ is given, which correspond to non-homogeneous Neumann boundary conditions.
+
+It appears that system \eqref{eq:pm:strong} with boundary conditions \eqref{eq:strongbcs} forms a well-posed problem when $\Gamma_D$ has positive measure within $\partial\Omega$ and when $\rho_D\ge 0$.  In the time-dependent case, classical solutions apparently exist if additionally $\rho_D$ is actually positive and the initial density is positive \citep[Theorem 3.1]{Vazquez2007}.
+
+A straightforward substitution allows us to rewrite the problem as a linear system, essentially as a linear advection-diffusion problem.  First define the smooth field
+\begin{equation}
+G(z) = \frac{c + g z}{\mu};
+\end{equation}
+recall the $c,g,\mu$ are all positive constants.  Then $\bsigma = -k \left(\rho^2 \grad G + G \grad(\rho^2/2)\right)$.  It follows that we can rewrite the problem as a linear system for
+\begin{equation}
+u = \frac{\rho^2}{2}. \label{eq:pm:defu}
+\end{equation}
+The equations and boundary conditions are
+\begin{subequations}
+\label{eq:pm:strongu}
+\begin{align}
+\bsigma &= - k \left(2 u \grad G + G \grad u\right) \\
+\Div \bsigma &= 0 \\
+u|_{\Gamma_D} &= \rho_D^2/2 \\
+(\bsigma\cdot \bn)|_{\Gamma_N} &= 0
+\end{align}
+\end{subequations}
+Here $\grad G$ acts as a velocity to make \eqref{eq:pm:strongu} a linear, steady-state advection-diffusion problem.  Standard theory for such equations applies to \eqref{eq:pm:strongu} to show $u(x,y,z)$ exists weakly and classically \citep[Chapter 6]{Evans2010}, with $u>0$ everywhere if $\rho_D>0$ on $\Gamma_D$ of positive measure.  The density $\rho$ and pressure $P$ are easily recovered via \eqref{eq:pm:defu} and \eqref{eq:ideal} when $u\ge 0$.
 
 \section{Weak form allowing discontinuous permeability}
 
