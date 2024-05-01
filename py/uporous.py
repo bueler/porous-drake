@@ -1,9 +1,9 @@
 from firedrake import *
 from firedrake.output import VTKFile
 
-m = 100               # resolution
+m = 100              # resolution
 lx = 100.0           # width
-ly = 24.0            # height
+ly = 22.0            # height
 
 ## for multiple units with discontinuous k:
 k1, phi1 = 6.87e-12, 0.500  # CV
@@ -12,12 +12,12 @@ k3, phi3 = 2.18e-13, 0.232  # FV
 
 # defined parameters
 R = 8.314462618         # universal gas constant 
-T = 293.15              # dome and gas temperature
+T = 293.15              # dome and gas temperature (K)
 M = 0.018015            # molar mass of steam 
 c = (R * T) / M         # ratio from ideal gas law
 mu = 0.000043           # dynamic viscosity
-g = 9.8                 # acceleration of gravity
-patm = 101000.0         # atmospheric pressure
+g = 9.8                 # acceleration of gravity (m s-2)
+patm = 101325.0         # atmospheric pressure (Pa)
 
 # indices of four boundaries/sides:
 #   (1, 2, 3, 4) = (left, right, bottom, top)
@@ -37,21 +37,13 @@ x, z = SpatialCoordinate(mesh)   # x horizontal, z vertical
 kupper = conditional(z < 18.0, k2, conditional(abs(x - 50.0) < 12.0, k2, k3))
 k = conditional(z < 12.0, k1, conditional(abs(x - 50.0) < 4.0, k1, kupper))
 ## phi = corresponding porosity field; conditional structure the same
-#phiupper = conditional(z < 18.0, phi2, conditional(abs(x - 50.0) < 12.0, phi2, phi3))
-#phi = conditional(z < 12.0, phi1, conditional(abs(x - 50.0) < 4.0, phi1, phiupper))
+phiupper = conditional(z < 18.0, phi2, conditional(abs(x - 50.0) < 12.0, phi2, phi3))
+phi = conditional(z < 12.0, phi1, conditional(abs(x - 50.0) < 4.0, phi1, phiupper))
 
-# steam density at atmospheric pressure
-dens = patm / c # kg/m^3
-#print("Steam density at surface is", dens, "kg/m^3")
-# overpressure at depth, corresponding to input gas flux
-mpa = 1000000.
-# steam density at 100m depth with 1 MPa overpressure
-#dens_r = 2700.0         # overburden rock/lava density
-#dens1 = ((dens_r * g * ly) + mpa) / c
-dens1 = mpa / c
-#print("Steam density at", ly, " m deep, with an overpressure of", mpa, "Pa: ",  dens1, "kg/m^3")
-rho_top = dens * g * z
-rho_bottom = dens1 * g * z
+# steam density boundary conditions
+dens_top = patm / c # kg/m^3
+pressure_bottom = 1100000.0   # Pa; = 11 bar
+dens_bottom = pressure_bottom / c
 
 # mixed weak form; see doc.pdf
 n = FacetNormal(mesh)
@@ -61,8 +53,8 @@ F = dot(sigma, omega) * dx \
     - u * div(k * G * omega) * dx \
     + avg(u) * jump(k * omega, n) * dS \
     + div(sigma) * v * dx \
-    + (k / 2.0) * rho_bottom**2 * dot(omega, n) * ds(3) \
-    + (k / 2.0) * rho_top**2 * dot(omega, n) * ds(4)
+    + (k / 2.0) * dens_bottom**2 * dot(omega, n) * ds(3) \
+    + (k / 2.0) * dens_top**2 * dot(omega, n) * ds(4)
 
 # Neumann conditions on u for ids 1,2 is now Dirichlet on normal
 # component of sigma; we must set both components apparently
@@ -70,7 +62,7 @@ BCs = DirichletBC(W.sub(0), as_vector([0.0,0.0]), (1,2))
 
 print('solving weak mixed form for sigma, u ...')
 sigma, u = w.subfunctions
-u.assign(dens**2/2)  # initial iterate nonzero (equals top b. c.)
+u.assign(dens_top**2/2)  # initial iterate nonzero (equals top b. c.)
 sigma.assign(as_vector([0.0,0.0]))
 solve(F == 0, w, bcs=[BCs,], options_prefix='main',
       solver_parameters = {'snes_type': 'ksponly',
@@ -78,19 +70,36 @@ solve(F == 0, w, bcs=[BCs,], options_prefix='main',
                            'pc_type': 'lu',
                            'pc_factor_mat_solver_type': 'mumps'})
 
+print('measuring mass conservation ...')
+bottomflux = assemble(dot(sigma,n) * ds(3))
+topflux = assemble(dot(sigma,n) * ds(4))
+imbalance = topflux + bottomflux
+print(f'  mass flux out of top    = {topflux:13.6e}')
+print(f'  mass flux into bottom   = {-bottomflux:13.6e}')
+print(f'  imbalance               = {imbalance:13.6e}')
+
+print('computing mass flux (kg m-2 s-1) from units ...')
+CVind = conditional(abs(x - 50.0) < 4.0, 1.0, 0.0)
+CVflux = assemble(dot(CVind * sigma,n) * ds(4))
+OBind = conditional(abs(x - 50.0) < 12.0, conditional(abs(x - 50.0) > 4.0, 1.0, 0.0), 0.0)
+OBflux = assemble(dot(OBind * sigma,n) * ds(4))
+FVind = 1.0 - CVind - OBind
+FVflux = assemble(dot(FVind * sigma,n) * ds(4))
+fluxsum = CVflux + OBflux + FVflux
+assert (topflux - fluxsum) / topflux < 1.0e-12
+print(f'  CV unit flux            = {CVflux:13.6e} ({100*CVflux/topflux:5.2f} %)')
+print(f'  OB unit flux            = {OBflux:13.6e} ({100*OBflux/topflux:5.2f} %)')
+print(f'  FV unit flux            = {FVflux:13.6e} ({100*FVflux/topflux:5.2f} %)')
+
 sigma, u = w.subfunctions
-sigma.rename('sigma = rho q (mass flux; kg m-2 s-1)')
+sigma.rename('sigma (mass flux; kg m-2 s-1)')
 u.rename('u (rho^2/2)')
 rho = Function(H).interpolate(sqrt(2.0 * u))
 rho.rename('rho (density; kg m-3')
-
-#print('measuring conservation ...')
-#topflux = assemble(dot(sigma,n) * ds(4))
-#bottomflux = assemble(dot(sigma,n) * ds(3))
-#imbalance = topflux + bottomflux
-#print(f'  flux out of top    = {topflux:13.6e}')
-#print(f'  flux into bottom   = {-bottomflux:13.6e}')
-#print(f'  imbalance          = {imbalance:13.6e}')
+q = Function(S).project(sigma / rho)  # interpolate throws error re dual basis
+q.rename('q (Darcy volumetric flux; m s-1)')
+v = Function(S).project(q / phi)      # ditto
+v.rename('v (velocity; m s-1)')
 
 print('saving fields to result.pvd ...')
-VTKFile("result.pvd").write(sigma, u, rho)
+VTKFile("result.pvd").write(sigma, u, rho, q, v)
