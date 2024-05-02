@@ -3,12 +3,16 @@ from firedrake.output import VTKFile
 
 m = 100              # resolution
 lx = 100.0           # width
-ly = 22.0            # height
+lz = 22.0            # height
 
 ## for multiple units with discontinuous k:
 k1, phi1 = 6.87e-12, 0.500  # CV
-k2, phi2 = 4.94e-15, 0.0324 # OB
-k3, phi3 = 2.18e-13, 0.232  # FV
+if True:
+    k2, phi2 = 4.94e-15, 0.0324 # OB
+    k3, phi3 = 2.18e-13, 0.232  # FV
+else:  # flatten
+    k2, phi2 = k1, phi1
+    k3, phi3 = k1, phi1
 
 # defined parameters
 R = 8.314462618         # universal gas constant 
@@ -21,7 +25,7 @@ patm = 101325.0         # atmospheric pressure (Pa)
 
 # indices of four boundaries/sides:
 #   (1, 2, 3, 4) = (left, right, bottom, top)
-mesh = RectangleMesh(m, m, lx, ly, quadrilateral=True)
+mesh = RectangleMesh(m, m, lx, lz, quadrilateral=True)
 
 # choose function spaces
 S = FunctionSpace(mesh, 'RTCF', 1)
@@ -39,6 +43,8 @@ k = conditional(z < 12.0, k1, conditional(abs(x - 50.0) < 4.0, k1, kupper))
 ## phi = corresponding porosity field; conditional structure the same
 phiupper = conditional(z < 18.0, phi2, conditional(abs(x - 50.0) < 12.0, phi2, phi3))
 phi = conditional(z < 12.0, phi1, conditional(abs(x - 50.0) < 4.0, phi1, phiupper))
+
+# FIXME:  P0 = patm * exp((g/c) * (lz - z)
 
 # steam density boundary conditions
 dens_top = patm / c # kg/m^3
@@ -79,14 +85,16 @@ print(f'  mass flux into bottom   = {-bottomflux:13.6e}')
 print(f'  imbalance               = {imbalance:13.6e}')
 
 print('computing mass flux (kg m-2 s-1) from units ...')
+# surface portion indicator functions
 CVind = conditional(abs(x - 50.0) < 4.0, 1.0, 0.0)
-CVflux = assemble(dot(CVind * sigma,n) * ds(4))
 OBind = conditional(abs(x - 50.0) < 12.0, conditional(abs(x - 50.0) > 4.0, 1.0, 0.0), 0.0)
-OBflux = assemble(dot(OBind * sigma,n) * ds(4))
 FVind = 1.0 - CVind - OBind
+# corresponding mass fluxes
+CVflux = assemble(dot(CVind * sigma,n) * ds(4))
+OBflux = assemble(dot(OBind * sigma,n) * ds(4))
 FVflux = assemble(dot(FVind * sigma,n) * ds(4))
 fluxsum = CVflux + OBflux + FVflux
-assert (topflux - fluxsum) / topflux < 1.0e-12
+assert abs(topflux - fluxsum)  < 1.0e-14 * topflux  # consistency with topflux
 print(f'  CV unit flux            = {CVflux:13.6e} ({100*CVflux/topflux:5.2f} %)')
 print(f'  OB unit flux            = {OBflux:13.6e} ({100*OBflux/topflux:5.2f} %)')
 print(f'  FV unit flux            = {FVflux:13.6e} ({100*FVflux/topflux:5.2f} %)')
