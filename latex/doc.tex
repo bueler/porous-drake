@@ -68,21 +68,22 @@ Within $\Omega$ we assume there is a matrix of porous material with spatially-va
 \begin{equation}
 RT \rho = M P.  \label{eq:ideal}
 \end{equation}
-Let $c = RT/M$, a positive constant.
+Let $c = RT/M$, a positive constant, so that $c \rho = P$.
 
-We assume that the gas flow satisfies Darcy's law \citep{Fowler2011}.  This flow is driven by the gradient of the deviation of gas pressure from the (litho)static distribution.  The lithostatic distribution is the pressure field $P_0=-\rho g z$ for which there would be no flow; here $g$ is the (constant) acceleration of gravity.  Thus
+We assume that the gas flow satisfies Darcy's law \citep{Fowler2011}, driven by the gradient of the deviation of the gas pressure from the (litho)static pressure distribution $P_0=P_0(z)$, for which there would be no flow:
 \begin{equation}
+\bq = - \frac{k}{\mu} \grad\left(P - P_0\right) \label{eq:pmtime:darcy}
+\end{equation}
+(A formula for $P_0(z)$ is derived just below.)  Because mass is conserved, additionally we have:
+\begin{equation}
+\phi \frac{\partial \rho}{\partial t} + \Div \left(\rho\, \bq\right) = 0. \label{eq:pmtime:masscont}
+\end{equation}
+In \eqref{eq:pmtime:darcy} $\mu$ is the dynamic viscosity of the gas, again taken to be constant.  Regarding units, the density $\rho(t,x,y,z)$ is in SI units of $\text{kg}\,\text{m}^{-3}$, the pressure $P$ is in $\text{Pa} = \text{N}\,\text{m}^2$, and the (vector) volumetric flux $\bq(t,x,y,z)$ is in units $\text{m}^3\,\text{m}^{-2}\,\text{s}^{-1} = \text{m}\,\text{s}^{-1}$
+
+The lithostatic distribution is the pressure field .; here $g$ is the (constant) acceleration of gravity\begin{equation}
 P-P_0 = c\rho+\rho g z \label{eq:drivingpressure}
 \end{equation}
-is the driving distribution, the pressure head.  Because mass is conserved, the following system of equations determines the evolution of the density $\rho(t,x,y,z)$, in SI units of $\text{kg}\,\text{m}^{-3}$, and (vector) volumetric flux $\bq(t,x,y,z)$, in units $\text{m}^3\,\text{m}^{-2}\,\text{s}^{-1} = \text{m}\,\text{s}^{-1}$:
-\begin{subequations}
-\label{eq:pmtime}
-\begin{align}
-\bq &= - \frac{k}{\mu} \grad\left(c \rho + \rho g z\right) \label{eq:pmtime:darcy} \\
-\phi \frac{\partial \rho}{\partial t} + \Div \left(\rho\, \bq\right) &= 0. \label{eq:pmtime:masscont}
-\end{align}
-\end{subequations}
-In \eqref{eq:pmtime:darcy} $\mu$ is the dynamic viscosity of the gas, again taken to be constant.
+
 
 Several observations can be made.  Physically, the gas density must be non-negative: $\rho\ge 0$.  Relative to the classic mass continuity statement ``$\partial\rho/\partial t + \Div(\rho \bv)=0$'' \citep[for example]{Tadmor2012}, where $\bv$ is the fluid velocity, note that \eqref{eq:pmtime:masscont} is scaled with the porosity $\phi$.  The dimensionless coefficent $\phi$ is also implicit in the definition of $\bq$, as a gas volume per unit area of any face of the porous matrix, because $\bq = \phi \bv$.  However, while the velocity $\bv$ may be helpful in diagnosing the solution, it is not required when stating the model.
 
