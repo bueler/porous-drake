@@ -24,7 +24,6 @@ T = 293.15              # dome and gas temperature  (K)
 M = 0.018015            # molar mass of steam       (kg mol-1)
 c = (R * T) / M         # ratio from ideal gas law  (J kg-1)
 mu = 0.000043           # dynamic viscosity         (Pa s)
-g = 9.8                 # acceleration of gravity   (m s-2)
 
 # indices of four boundaries/sides:
 #   (1, 2, 3, 4) = (left, right, bottom, top)
@@ -51,9 +50,7 @@ k = conditional(z < 12.0, k1, conditional(abs(x - 50.0) < 4.0, k1, kupper))
 phiupper = conditional(z < 18.0, phi2, conditional(abs(x - 50.0) < 12.0, phi2, phi3))
 phi = conditional(z < 12.0, phi1, conditional(abs(x - 50.0) < 4.0, phi1, phiupper))
 
-# lithostatic pressure field
 Patm = 101325.0                  # atmospheric pressure (Pa)
-P0 = Patm * exp((g/c) * (lz - z))
 
 # Dirichlet boundary conditions
 verif = False
@@ -69,7 +66,6 @@ n = FacetNormal(mesh)
 alf, bet = c / (2.0 * mu), 1.0 / mu
 F = dot(sigma, omega) * dx \
     - alf * u * div(k * omega) * dx \
-    - bet * k * sqrt(u) * dot(grad(P0), omega) * dx \
     + alf * avg(u) * jump(k * omega, n) * dS \
     + div(sigma) * v * dx \
     + alf * k * u_bottom * dot(omega, n) * ds(3) \
@@ -84,9 +80,7 @@ sigma, u = w.subfunctions
 u.assign(u_top)  # initial iterate nonzero (equals top b. c.)
 sigma.assign(as_vector([0.0,0.0]))
 solve(F == 0, w, bcs=[BCs,], options_prefix='s',
-      solver_parameters = {'snes_type': 'newtonls',
-                           'snes_converged_reason': None,
-                           'snes_monitor': None,
+      solver_parameters = {'snes_type': 'ksponly',
                            'ksp_type': 'preonly',
                            'pc_type': 'lu',
                            'pc_factor_mat_solver_type': 'mumps'})
@@ -129,12 +123,10 @@ rho = Function(H).interpolate(sqrt(abs(u)))
 rho.rename('rho (density; kg m-3)')
 P = Function(H).interpolate(c * rho)
 P.rename('p (pressure; Pa)')
-P0 = Function(H).interpolate(P0)
-P0.rename('P0 (lithostatic pressure; Pa)')
 q = Function(S).project(sigma / rho)  # interpolate throws error re dual basis
 q.rename('q (Darcy volumetric flux; m s-1)')
 v = Function(S).project(q / phi)      # ditto
 v.rename('v (velocity; m s-1)')
 
 print('saving fields to result.pvd ...')
-VTKFile("result.pvd").write(sigma, u, uneg, rho, P, P0, q, v)
+VTKFile("result.pvd").write(sigma, u, uneg, rho, P, q, v)
