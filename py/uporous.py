@@ -1,45 +1,78 @@
+from argparse import ArgumentParser, RawTextHelpFormatter
+parser = ArgumentParser(description="""
+Solves simple gas-in-porous-media problem using Darcy's law,
+for discontinuous permeability.  This problem is linear in
+the square of density: u = rho^2.  Two FE methods with order
+j polynomial spaces are implemented:
+  * primal CG_j            for u        [default]
+  * mixed  RT_{j+1} x DG_j for sigma,u  [FIXME it is wrong]
+""", formatter_class=RawTextHelpFormatter)
+parser.add_argument('-dg', action='store_true', default=False,
+                    help='use mixed RT_{k+1} x DG_k method')
+parser.add_argument('-flattenk', action='store_true', default=False,
+                    help='flatten materials to k=k1 and phi=phi1')
+parser.add_argument('-mx', type=int, default=100, metavar='MX',
+                    help='x resolution')
+parser.add_argument('-mz', type=int, default=22, metavar='MZ',
+                    help='z resolution')
+parser.add_argument('-order', type=int, default=1, metavar='J',
+                    help='polynomial order for density rho')
+parser.add_argument('-quad', action='store_true', default=False,
+                    help='use quadrilateral elements')
+args, passthroughoptions = parser.parse_known_args()
+
+import petsc4py
+petsc4py.init(passthroughoptions)
 from firedrake import *
 from firedrake.output import VTKFile
 
-mx = 200             # resolution
-mz = 44              # resolution
-
+# physical dimensions
 lx = 100.0           # width (m)
 lz = 22.0            # height (m)
 
-## for multiple units with discontinuous k:
+## multiple units with discontinuous k
 k1, phi1 = 6.87e-12, 0.500  # CV
-if True:
-    # moderated alternative: k2, phi2 = 4.94e-14, 0.0324 # OB
-    k2, phi2 = 4.94e-15, 0.0324 # OB
-    k3, phi3 = 2.18e-13, 0.232  # FV
-else:  # flatten
+if args.flattenk:
     k2, phi2 = k1, phi1
     k3, phi3 = k1, phi1
+else:
+    k2, phi2 = 4.94e-15, 0.0324 # OB
+    k3, phi3 = 2.18e-13, 0.232  # FV
 # note: k in m^2, phi dimensionless
 
-# defined parameters
-R = 8.314462618         # universal gas constant    (J kg-1 mol-1)
-T = 293.15              # dome and gas temperature  (K)
-M = 0.018015            # molar mass of steam       (kg mol-1)
-c = (R * T) / M         # ratio from ideal gas law  (J kg-1)
-mu = 0.000043           # dynamic viscosity         (Pa s)
+# fixed parameters
+R = 8.314462618         # universal gas constant       (J kg-1 mol-1)
+T = 293.15              # dome and gas temperature     (K)
+M = 0.018015            # molar mass of steam          (kg mol-1)
+c = (R * T) / M         # ideal gas law is  c rho = P  (J kg-1)
+mu = 0.000043           # dynamic viscosity            (Pa s)
+Patm = 101325.0         # atmospheric pressure         (Pa)
 
 # indices of four boundaries/sides:
 #   (1, 2, 3, 4) = (left, right, bottom, top)
-mesh = RectangleMesh(mx, mz, lx, lz, quadrilateral=True)
+print(f'{"quadrilateral" if args.quad else "triangular"} mesh of {args.mx} x {args.mz} elements ...')
+if args.quad:
+    mesh = RectangleMesh(args.mx, args.mz, lx, lz, quadrilateral=True)
+else:
+    mesh = RectangleMesh(args.mx, args.mz, lx, lz, diagonal='crossed')
+n = FacetNormal(mesh)
 
 # choose function spaces
-order = 0
-S = FunctionSpace(mesh, 'RTCF', order + 1)
-H = FunctionSpace(mesh, 'DG', order)
-# alternative which seems stable with order = 1:
-#S = FunctionSpace(mesh, 'RTCF', order + 1)
-#H = FunctionSpace(mesh, 'CG', order)
-SH = S * H
-w = Function(SH)
-sigma, u = split(w)              # sigma = (mass flux), u = rho^2
-omega, v = TestFunctions(SH)
+if args.dg:
+    if args.quad:
+        S = FunctionSpace(mesh, 'RTCF', args.order + 1)
+    else:
+        S = FunctionSpace(mesh, 'RT', args.order + 1)
+    H = FunctionSpace(mesh, 'DG', args.order)
+    # alternative which seems stable with k = 1: RTCF_{k+1} x CG_k
+    SH = S * H
+    w = Function(SH)
+    sigma, u = split(w) # sigma = (mass flux), u = rho^2
+    omega, v = TestFunctions(SH)
+else:
+    H = FunctionSpace(mesh, 'CG', args.order)
+    w = Function(H)
+    v = TestFunction(H)
 
 # permeability and porosity
 x, z = SpatialCoordinate(mesh)   # x horizontal, z vertical
@@ -50,40 +83,61 @@ k = conditional(z < 12.0, k1, conditional(abs(x - 50.0) < 4.0, k1, kupper))
 phiupper = conditional(z < 18.0, phi2, conditional(abs(x - 50.0) < 12.0, phi2, phi3))
 phi = conditional(z < 12.0, phi1, conditional(abs(x - 50.0) < 4.0, phi1, phiupper))
 
-Patm = 101325.0                  # atmospheric pressure (Pa)
-
 # Dirichlet boundary conditions
-verif = False
 u_top = (Patm / c)**2
-if verif:
-    Pbottom = P0
-else:
-    Pbottom = 1100000.0   # Pa; = 11 bar
+Pbottom = 1100000.0   # Pa; = 11 bar
 u_bottom = (Pbottom / c)**2
 
-# mixed weak form; see doc.pdf
-n = FacetNormal(mesh)
-alf, bet = c / (2.0 * mu), 1.0 / mu
-F = dot(sigma, omega) * dx \
-    - alf * u * div(k * omega) * dx \
-    + alf * avg(u) * jump(k * omega, n) * dS \
-    + div(sigma) * v * dx \
-    + alf * k * u_bottom * dot(omega, n) * ds(3) \
-    + alf * k * u_top * dot(omega, n) * ds(4)
+alf = c / (2.0 * mu)
+if args.dg:
+    # mixed RT x DG weak form; see doc.pdf; WRONG
+    F = dot(sigma, omega) * dx \
+        - alf * u * div(k * omega) * dx \
+        + alf * avg(u) * jump(k * omega, n) * dS \
+        + div(sigma) * v * dx \
+        + alf * k * u_bottom * dot(omega, n) * ds(3) \
+        + alf * k * u_top * dot(omega, n) * ds(4)
+    # Neumann conditions on u for ids 1,2 is now Dirichlet on normal
+    # component of sigma; we must set both components apparently
+    BCs = [DirichletBC(SH.sub(0), as_vector([0.0,0.0]), (1,2)),]
+    sigma, u = w.subfunctions
+    u.assign(u_top)  # initial iterate nonzero (equals top b. c.)
+    sigma.assign(as_vector([0.0,0.0]))
+    print(f'solving mixed form with RT{args.order+1} x DG{args.order} for sigma, u ...')
+else:
+    # primal CG weak form; see doc.pdf
+    F = alf * k * dot(grad(w), grad(v)) * dx(degree=4)
+    BCs = [DirichletBC(H, u_bottom, 3),
+           DirichletBC(H, u_top, 4)]
+    print(f'solving primal CG{args.order} form for sigma, u ...')
 
-# Neumann conditions on u for ids 1,2 is now Dirichlet on normal
-# component of sigma; we must set both components apparently
-BCs = DirichletBC(SH.sub(0), as_vector([0.0,0.0]), (1,2))
-
-print('solving weak mixed form for sigma, u ...')
-sigma, u = w.subfunctions
-u.assign(u_top)  # initial iterate nonzero (equals top b. c.)
-sigma.assign(as_vector([0.0,0.0]))
-solve(F == 0, w, bcs=[BCs,], options_prefix='s',
+# linear solve is the same for either method
+solve(F == 0, w, bcs=BCs, options_prefix='s',
       solver_parameters = {'snes_type': 'ksponly',
                            'ksp_type': 'preonly',
                            'pc_type': 'lu',
                            'pc_factor_mat_solver_type': 'mumps'})
+
+# get consistent u, and recover sigma if CG
+if args.dg:
+    sigma, u = w.subfunctions
+else:
+    u = Function(H).assign(w)
+    if args.quad:
+        S = FunctionSpace(mesh, 'RTCF', args.order + 1)
+    else:
+        S = FunctionSpace(mesh, 'RT', args.order + 1)
+    sigma = Function(S).project(- alf * k * grad(u))
+u.rename('u (rho^2)')
+sigma.rename('sigma (mass flux; kg m-2 s-1)')
+
+# warn if negative u
+uneg = Function(H).interpolate((-u + abs(u))/2.0)
+uneg.rename('u_- (negative part of u)')
+if norm(uneg, 'L2') > 0.0:
+    print('WARNING: nonzero negative part of u(x,z) detected')
+    print('         see "uneg" field in output file')
+upos = Function(H).interpolate((u + abs(u))/2.0)
 
 print('measuring mass conservation ...')
 bottomflux = assemble(dot(sigma,n) * ds(3))
@@ -108,17 +162,7 @@ print(f'  CV unit flux            = {CVflux:13.6e} ({100*CVflux/topflux:5.2f} %)
 print(f'  OB unit flux            = {OBflux:13.6e} ({100*OBflux/topflux:5.2f} %)')
 print(f'  FV unit flux            = {FVflux:13.6e} ({100*FVflux/topflux:5.2f} %)')
 
-sigma, u = w.subfunctions
-sigma.rename('sigma (mass flux; kg m-2 s-1)')
-u.rename('u (rho^2)')
-
-uneg = Function(H).interpolate((-u + abs(u))/2.0)
-uneg.rename('u_- (negative part of u)')
-if norm(uneg, 'L2') > 0.0:
-    print('WARNING: nonzero negative part of u(x,z) detected')
-    print('         see "uneg" field in output file')
-upos = Function(H).interpolate((u + abs(u))/2.0)
-
+# recover physical scalars and vectors
 rho = Function(H).interpolate(sqrt(abs(u)))
 rho.rename('rho (density; kg m-3)')
 P = Function(H).interpolate(c * rho)
