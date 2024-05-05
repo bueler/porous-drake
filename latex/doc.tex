@@ -69,11 +69,11 @@ Within $\Omega$ we assume there is a matrix of porous material with spatially-va
 c \rho = P.  \label{eq:ideal}
 \end{equation}
 
-We assume that the gas flow satisfies Darcy's law \citep{Fowler2011}, thus the volumetric flux $\bq$ is driven by the gradient of the deviation of the gas pressure from the (litho)static pressure distribution $P_0(z)$:
+We assume that the gas flow satisfies Darcy's law \citep{Fowler2011}, thus the volumetric flux $\bq$ is driven by the gradient of the gas pressure:
 \begin{equation}
-\bq = - \frac{k}{\mu} \grad\left(P - P_0\right) \label{eq:pmtime:darcy}
+\bq = - \frac{k}{\mu} \grad P \label{eq:pmtime:darcy}
 \end{equation}
-Here $\mu$ is the dynamic viscosity of the gas, again taken to be constant, and note that a formula for $P_0(z)$ is derived momentarily.  Because mass is conserved, additionally we have:
+Here $\mu$ is the dynamic viscosity of the gas, again taken to be constant.  (For now we ignore gravity, which contributes a term \citep{Collinson2012}.)  Because mass is conserved, additionally we have:
 \begin{equation}
 \phi \frac{\partial \rho}{\partial t} + \Div \left(\rho\, \bq\right) = 0. \label{eq:pmtime:masscont}
 \end{equation}
@@ -82,17 +82,12 @@ Here we are assuming no mass sources or sinks, as otherwise there would be an ad
 Certain observations regarding these equations should be made.  First, gas density must be non-negative: $\rho\ge 0$.  Second, relative to the classic mass continuity statement ``$\partial\rho/\partial t + \Div(\rho \bv)=0$'' \citep[for example]{Tadmor2012}, where $\bv$ is the fluid velocity, note that \eqref{eq:pmtime:masscont} is scaled with the (dimensionless) porosity $\phi$.  However, $\phi$ is also implicit in the definition of $\bq$ because it is the gas volume per unit area of any face of the porous matrix: $\bq = \phi \bv$.  While the velocity $\bv$ may be helpful in understanding the solution, it is not required when stating the model.
 
 \newcommand{\Patm}{P_{\text{atm}}}
-The lithostatic distribution $P_0$ is the pressure field for a mass (gas) distribution for which there is no flow.  Considering a fully-connected porous medium with stationary gas, because of gravity the mass of gas in each layer contributes to the pressure on the gas below, that is, $dP_0 = - g \rho_0\,dz = - (g/c) P_0\,dz$ where $g>0$ is the acceleration of gravity.  If we assume that the top of the porous medium, at height $z=L$, is at atmospheric pressure $\Patm$ then we have the following formula:
-\begin{equation}
-P_0(z) = \Patm e^{g(L-z)/c}. \label{eq:staticpressure}
-\end{equation}
-Clearly, $P_0$ is independent of the solution pressure $P$, and (also clearly) substitution of $P_0$ for $P$ in \eqref{eq:pmtime:darcy} gives $\bq=0$, that is, no flow.
 
 Regarding units of the solution variables in the above equations, $\rho(t,x,y,z)$ is in SI units of $\text{kg}\,\text{m}^{-3}$, $P(t,x,y,z)$ in $\text{Pa} = \text{N}\,\text{m}^{-2}$, and $\bq(t,x,y,z)$ in $\text{m}^3\,\text{m}^{-2}\,\text{s}^{-1} = \text{m}\,\text{s}^{-1}$.  Also the porosity $\phi$ is a dimensionless ratio of volumes, thus $0\le \phi \le 1$, the permeability $k$ is in $\text{m}^2$, the constant $c$ is in $\text{J}\,\text{kg}^{-1}$, and the dynamic viscosity $\mu$ is in $\text{Pa}\,\text{s}$.
 
-Considering the system of equations \eqref{eq:ideal}--\eqref{eq:staticpressure}, it is straightforward to eliminate the pressure $P$ and flux $\bq$, if this is desired:
+Considering the system of equations \eqref{eq:ideal}--\eqref{eq:pmtime:masscont}, it is straightforward to eliminate the pressure $P$ and flux $\bq$, if this is desired:
 \begin{equation}
-\phi \frac{\partial \rho}{\partial t} - \Div \left(\frac{k}{\mu} \rho \grad\left(c \rho - P_0\right)\right) = 0. \label{eq:pmtime:primal}
+\phi \frac{\partial \rho}{\partial t} - \Div \left(\frac{k}{\mu} \rho \grad\left(c \rho\right)\right) = 0. \label{eq:pmtime:primal}
 \end{equation}
 This form is comparable to the better-known heat equation
 \begin{equation}
@@ -108,7 +103,7 @@ with units of $\text{kg}\,\text{m}^{-2}\,\text{s}^{-1}$.  The steady-state model
 \begin{subequations}
 \label{eq:pm:strong}
 \begin{align}
-\bsigma &= - \frac{k}{\mu} \rho \grad\left(c \rho - P_0\right) \label{eq:darcy} \\
+\bsigma &= - \frac{k}{\mu} \rho \grad\left(c \rho\right) \label{eq:darcy} \\
 \Div \bsigma &= 0 \label{eq:masscont}
 \end{align}
 \end{subequations}
@@ -123,39 +118,38 @@ Suitable boundary conditions must apply to system \eqref{eq:pm:strong}.  On the 
 \end{subequations}
 It is straightforward to extend the model with provided values of the mass flux, i.e.~$(\bsigma\cdot \bn)|_{\Gamma_N}= \sigma_N$ where $\sigma_N$ is given, for a non-homogeneous Neumann condition.  System \eqref{eq:pm:strong} with boundary conditions \eqref{eq:strongbcs} apparently forms a well-posed problem as long as $\Gamma_D$ has positive measure (within $\partial\Omega$) and $\rho_D\ge 0$.  In the time-dependent case, classical solutions exist if additionally $\rho_D$ is actually positive and the initial density is positive \citep[Theorem 3.1]{Vazquez2007}.
 
-The equations above form a nonlinear model for the density $\rho$, with degeneration of the diffusivity if $\rho \to 0$.  However, a straightforward substitution allows us to rewrite the problem as a semi-linear\footnote{``Semi-linear'' means that the highest-order term is linear \citep[section 1.1]{Evans2010}.} system, essentially as a linear diffusion problem along with (nonlinear) advection from the lithostatic pressure $P_0$.  Let
+The equations above form a nonlinear model for the density $\rho$, with degeneration of the diffusivity if $\rho \to 0$.  However, a straightforward substitution allows us to rewrite the problem as a linear system, a linear diffusion problem.  Let
 \begin{equation}
 u = \rho^2 \label{eq:pm:defu}
 \end{equation}
-and define convenience constants
-\begin{equation}
-\alpha = \frac{c}{2\mu}, \quad \beta = \frac{1}{\mu}. \label{eq:pm:convenience}
-\end{equation}
-Then \eqref{eq:pm:strong}, \eqref{eq:strongbcs} becomes
+and define convenience constant $\alpha = c/(2\mu)$.  Then \eqref{eq:pm:strong}, \eqref{eq:strongbcs} becomes
 \begin{subequations}
 \label{eq:pm:strongu}
 \begin{align}
-\bsigma &= - \alpha k \grad u + \beta k \sqrt{u}\, \grad P_0 & &\text{on } \Omega \label{eq:pm:strongu:darcy} \\
+\bsigma &= - \alpha k \grad u & &\text{on } \Omega \label{eq:pm:strongu:darcy} \\
 \Div \bsigma &= 0 & & \label{eq:pm:strongu:masscont} \\
 u &= \rho_D^2 & &\text{on } \Gamma_D  \label{eq:pm:strongu:bcD} \\
 \bsigma\cdot \bn &= 0 & &\text{on } \Gamma_N  \label{eq:pm:strongu:bcN} 
 \end{align}
 \end{subequations}
-The (mixed) strong-form system \eqref{eq:pm:strongu} is a steady-state, semi-linear advection-diffusion problem, for the solution pair $(\bsigma,u)$, in which $\grad P_0$ acts as a kind of transport velocity.  Eliminating $\bsigma$ is also straightforward, yielding primal form
+The (mixed) strong-form system \eqref{eq:pm:strongu} is a steady-state, semi-linear advection-diffusion problem, for the solution pair $(\bsigma,u)$.  Eliminating $\bsigma$ is also straightforward, yielding primal form
 \begin{equation}
--\alpha \Div(k\grad u) + \beta \Div(k \sqrt{u}\, \grad P_0) = 0. \label{eq:pm:primalstrongu}
+-\alpha \Div(k\grad u) = 0. \label{eq:pm:primalstrongu}
 \end{equation}
 In either form, the density $\rho$ and pressure $P$ are easily recovered via \eqref{eq:pm:defu}, \eqref{eq:ideal} as long as the solution satisfies $u\ge 0$.
 
-\section{Mixed weak form (with discontinuous permeability)}
 
-We will solve system \eqref{eq:pm:strongu} by a conservative mixed finite element (FE) method \citep{Boffi2013}.  In this section we derive the weak form, needed for an FE method, via an element-wise weak form.  This derivation allows the permeability field to be discontinuous across element edges, and it makes the conservation property of the FE scheme manifestly clear.
+\section{Weak forms and FE methods (for discontinuous permeability)}
+
+\subsection{Primal method using continuous density}  FIXME document it
+
+\subsection{Conservative mixed method using discontinuous density}  We should also be able to solve solve system \eqref{eq:pm:strongu} by a conservative mixed finite element (FE) method \citep{Boffi2013}.  FIXME In this section we derive the weak form, needed for an FE method, via an element-wise weak form.  This derivation allows the permeability field to be discontinuous across element edges, and it makes the conservation property of the FE scheme manifestly clear.
 
 Let $E$ be any well-behaved open subset of $\Omega$ with piecewise-$C^1$ boundary.  Assume that the exact, continuum solution $\bsigma,u$ of \eqref{eq:pm:strongu} are sufficiently continuous/smooth so that \eqref{eq:pm:strongu} holds pointwise, to allow the following derivation.  We multiply \eqref{eq:pm:strongu:darcy} by a vector-valued test function $\bomega$, and \eqref{eq:pm:strongu:masscont} by a scalar test function $v$, and integrate over $E$:
 \begin{subequations}
 \label{eq:pm:elementweak}
 \begin{align}
-\int_E \bsigma\cdot \bomega\,\dx + \int_E \alpha k \grad u \cdot \bomega\,\dx - \int_E \beta k \sqrt{u}\,\grad P_0 \cdot \bomega\,\dx &= 0 \label{eq:pm:elementweak:darcy} \\
+\int_E \bsigma\cdot \bomega\,\dx + \int_E \alpha k \grad u \cdot \bomega\,\dx &= 0 \label{eq:pm:elementweak:darcy} \\
 \int_E (\Div \bsigma) v\,\dx &= 0 \label{eq:pm:elementweak:masscont}
 \end{align}
 \end{subequations}
@@ -174,7 +168,7 @@ By \eqref{eq:pm:strongu:bcD}, in integrals along $\Gamma_D$ the value $u=\rho_D^
 
 To sum equations \eqref{eq:pm:elementweak:darcy} and \eqref{eq:pm:elementweak:masscont} over all elements $E$ in the mesh one must consider the $\partial E$ integrals in \eqref{eq:elementweak:ibp}, specifically for internal boundaries $e$ in $\Gamma_0$.  Each such face (edge) $e$ has two adjacent elements.  Following standard conventions \citep{Arnold2002,Ham2023}, there is an arbitrary choice of ``$+$'' and ``$-$'' adjacent elements for $e$, thus the sum of \eqref{eq:pm:elementweak:darcy} over all elements has become:
 \begin{align}
-\int_\Omega \bsigma\cdot \bomega\,\dx - &\int_\Omega \alpha u \Div\left(k \bomega\right)\,\dx - \int_\Omega \beta k \sqrt{u}\,\grad P_0 \cdot \bomega\,\dx \label{eq:elementweak:darcy:second} \\
+\int_\Omega \bsigma\cdot \bomega\,\dx - &\int_\Omega \alpha u \Div\left(k \bomega\right)\,\dx \label{eq:elementweak:darcy:second} \\
 &+ \sum_{e\in\Gamma_0} \int_e \alpha \left(k^+ u^+ \bomega^+\cdot\bn^+ + k^- u^- \bomega^-\cdot\bn^-\right)\,\ds = - \int_{\Gamma_D} \alpha k \rho_D^2 \bomega\cdot\bn\,\ds \notag
 \end{align}
 Based on experiments, we believe that the internal edge integrals $e\in\Gamma_0$ should be approximated as follows using standard notation \citep{Arnold2002}.  For a scalar function $f$ defined on the closure of each adjacent element to the face (edge) $e$ let $\{f\} = \frac{1}{2} (f_+ + f_-)$ denote the average across $e$.  For a vector-valued function $\bv$ let $\jump{\bv} = \bv_+ \cdot \bn_+ + \bv_- \cdot \bn_-$ denote the jump across the face $e$, a scalar.  We will keep the known jump of $k$, but we average the solution $u$ across faces.
@@ -183,14 +177,17 @@ The result is the following weak form system, for $\bsigma$ and $u$, which we pl
 \begin{subequations}
 \label{eq:weaku}
 \begin{align}
-\int_\Omega \bsigma\cdot \bomega\,\dx - &\int_\Omega \alpha u \Div\left(k \bomega\right)\,\dx - \int_\Omega \beta k \sqrt{u}\,\grad P_0 \cdot \bomega\,\dx \label{eq:weaku:darcy} \\
+\int_\Omega \bsigma\cdot \bomega\,\dx - &\int_\Omega \alpha u \Div\left(k \bomega\right)\,\dx \label{eq:weaku:darcy} \\
 &+ \sum_{e\in\Gamma_0} \int_e \alpha\, \{u\} \jump{k\bomega}\,\ds = - \int_{\Gamma_D} \alpha k \rho_D^2 \bomega\cdot\bn\,\ds \qquad \text{for all } \bomega \notag \\
 \int_\Omega (\Div \bsigma) v\,\dx &= 0 \qquad \text{for all } v  \label{eq:weaku:masscont}
 \end{align}
 \end{subequations}
 The first equation in this system weakly enforces Darcy's law, and the second weakly enforces conservation of mass.  The density $\rho$ and pressure $P$ are recovered from $u$ via \eqref{eq:pm:defu} and \eqref{eq:ideal}.
 
+
 \section{Firedrake implementation and solution}
+
+FIXME document basic CG method first
 
 To implement the above in Firedrake we must choose finite element spaces for $\bsigma$ and $u$.  To provide exact discrete mass conservation the vector fields $\bsigma$ will come from a space in which normal vectors are continuous across element boundaries.  However, the solution $u$, thus the density and pressure distributions $\rho,P$ also, are approximated by a discontinuous scalar field.  These stable element choices give discrete conservation, which we verify below.  On $\Gamma_N$ we must impose the essential requirement that $\bomega\cdot \bn=0$ on the function space; this is done through Firedrake's \verb|DirichletBC()| command.
 
@@ -207,7 +204,6 @@ Weak form \eqref{eq:weaku} then corresponds to the UFL code
 \begin{Verbatim}[fontsize=\small,frame=lines]
 F = dot(sigma, omega) * dx \
     - alf * u * div(k * omega) * dx \
-    - bet * k * sqrt(u) * dot(grad(P0), omega) * dx \
     + alf * avg(u) * jump(k * omega, n) * dS \
     + div(sigma) * v * dx \
     + alf * k * u_bottom * dot(omega, n) * ds(3) \
@@ -215,33 +211,15 @@ F = dot(sigma, omega) * dx \
 \end{Verbatim}
 Here \verb|n = FacetNormal(mesh)|.  Note that \verb|ds(i)| requires indices \verb|i| for the appropriate boundary segments.
 
-We solve the equations by the Newton method using a sparse direct matrix method \citep{Amestoy2001} for the Newton steps:
+We solve the equations by a sparse direct matrix method \citep{Amestoy2001}:
 \begin{Verbatim}[fontsize=\small,frame=lines]
 solve(F == 0, w, bcs=[BCs,],
-      solver_parameters = {'snes_type': 'newtonls',
-                           'snes_converged_reason': None,
-                           'snes_monitor': None,
+      solver_parameters = {'snes_type': 'ksponly',
                            'ksp_type': 'preonly',
                            'pc_type': 'lu',
                            'pc_factor_mat_solver_type': 'mumps'})
 \end{Verbatim}
 A more advanced iterative, block-wise, and multigrid solver is possible \citep[e.g.][]{Bueler2021}, but it will require careful development.
-
-FIXME Confirmation of global mass conservation is straightforward.  For example, on a rectangular domain with top side index \verb|4| and bottom side index \verb|3|:
-\begin{Verbatim}[fontsize=\small,frame=lines]
-topflux = assemble(dot(sigma,n) * ds(4))
-bottomflux = assemble(dot(sigma,n) * ds(3))
-imbalance = topflux + bottomflux
-print(f'  flux out of top    = {topflux:13.6e}')
-print(f'  flux into bottom   = {-bottomflux:13.6e}')
-print(f'  imbalance          = {imbalance:13.6e}')
-\end{Verbatim}
-These \verb|assemble| expressions compute mass flux integrals
-    $$\int_{\Gamma_i} \sigma\cdot \bn\,\ds = \int_{\Gamma_i} \rho \bq\cdot \bn\,\ds$$
-over a particular side $\Gamma_i$.  In a typical run we get fluxes which balance to rounding error:
-\begin{Verbatim}[fontsize=\small,frame=leftline]
-FIXME
-\end{Verbatim}
 
 
 \section{An application for gas flow through a porous lava dome}
