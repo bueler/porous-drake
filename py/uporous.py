@@ -2,13 +2,9 @@ from argparse import ArgumentParser, RawTextHelpFormatter
 parser = ArgumentParser(description="""
 Solves simple gas-in-porous-media problem using Darcy's law,
 for discontinuous permeability.  This problem is linear in
-the square of density: u = rho^2.  Two FE methods with order
-j polynomial spaces are implemented:
-  * primal CG_j            for u        [default]
-  * mixed  RT_{j+1} x DG_j for sigma,u  [FIXME it is wrong]
+the square of density: u = rho^2.  Implemented as a primal CG_j
+method (j>=1).
 """, formatter_class=RawTextHelpFormatter)
-parser.add_argument('-dg', action='store_true', default=False,
-                    help='use mixed RT_{k+1} x DG_k method')
 parser.add_argument('-flattenk', action='store_true', default=False,
                     help='flatten materials to k=k1 and phi=phi1')
 parser.add_argument('-mx', type=int, default=100, metavar='MX',
@@ -58,21 +54,9 @@ else:
 n = FacetNormal(mesh)
 
 # choose function spaces
-if args.dg:
-    if args.quad:
-        S = FunctionSpace(mesh, 'RTCF', args.order + 1)
-    else:
-        S = FunctionSpace(mesh, 'RT', args.order + 1)
-    H = FunctionSpace(mesh, 'DG', args.order)
-    # alternative which seems stable with k = 1: RTCF_{k+1} x CG_k
-    SH = S * H
-    w = Function(SH)
-    sigma, u = split(w) # sigma = (mass flux), u = rho^2
-    omega, v = TestFunctions(SH)
-else:
-    H = FunctionSpace(mesh, 'CG', args.order)
-    w = Function(H)
-    v = TestFunction(H)
+H = FunctionSpace(mesh, 'CG', args.order)
+u = Function(H, name='u (rho^2)')
+v = TestFunction(H)
 
 # permeability and porosity
 x, z = SpatialCoordinate(mesh)   # x horizontal, z vertical
@@ -88,47 +72,26 @@ u_top = (Patm / c)**2
 Pbottom = 1100000.0   # Pa; = 11 bar
 u_bottom = (Pbottom / c)**2
 
+# primal CG weak form; see doc.pdf
 alf = c / (2.0 * mu)
-if args.dg:
-    # mixed RT x DG weak form; see doc.pdf; WRONG
-    F = dot(sigma, omega) * dx \
-        - alf * u * div(k * omega) * dx \
-        + alf * avg(u) * jump(k * omega, n) * dS \
-        + div(sigma) * v * dx \
-        + alf * k * u_bottom * dot(omega, n) * ds(3) \
-        + alf * k * u_top * dot(omega, n) * ds(4)
-    # Neumann conditions on u for ids 1,2 is now Dirichlet on normal
-    # component of sigma; we must set both components apparently
-    BCs = [DirichletBC(SH.sub(0), as_vector([0.0,0.0]), (1,2)),]
-    sigma, u = w.subfunctions
-    u.assign(u_top)  # initial iterate nonzero (equals top b. c.)
-    sigma.assign(as_vector([0.0,0.0]))
-    print(f'solving mixed form with RT{args.order+1} x DG{args.order} for sigma, u ...')
-else:
-    # primal CG weak form; see doc.pdf
-    F = alf * k * dot(grad(w), grad(v)) * dx(degree=4)
-    BCs = [DirichletBC(H, u_bottom, 3),
-           DirichletBC(H, u_top, 4)]
-    print(f'solving primal CG{args.order} form for sigma, u ...')
+F = alf * k * dot(grad(u), grad(v)) * dx(degree=4)
+BCs = [DirichletBC(H, u_bottom, 3),
+       DirichletBC(H, u_top, 4)]
+print(f'solving primal CG{args.order} form for u ...')
 
-# linear solve is the same for either method
-solve(F == 0, w, bcs=BCs, options_prefix='s',
+# linear solve in fact
+solve(F == 0, u, bcs=BCs, options_prefix='s',
       solver_parameters = {'snes_type': 'ksponly',
                            'ksp_type': 'preonly',
                            'pc_type': 'lu',
                            'pc_factor_mat_solver_type': 'mumps'})
 
-# get consistent u, and recover sigma if CG
-if args.dg:
-    sigma, u = w.subfunctions
+# recover mass flux sigma to measure conservation
+if args.quad:
+    S = FunctionSpace(mesh, 'RTCF', args.order + 1)
 else:
-    u = Function(H).assign(w)
-    if args.quad:
-        S = FunctionSpace(mesh, 'RTCF', args.order + 1)
-    else:
-        S = FunctionSpace(mesh, 'RT', args.order + 1)
-    sigma = Function(S).project(- alf * k * grad(u))
-u.rename('u (rho^2)')
+    S = FunctionSpace(mesh, 'RT', args.order + 1)
+sigma = Function(S).project(- alf * k * grad(u))
 sigma.rename('sigma (mass flux; kg m-2 s-1)')
 
 # warn if negative u
