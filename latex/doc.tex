@@ -64,7 +64,9 @@ style=apa, natbib=true,
 
 Suppose $\Omega$ is a 2D or 3D domain with well-behaved boundary, such as a rectangle or other polygon in 2D, or a polyhedron in 3D.  We will use $x,y$ for the horizontal coordinates and $z$ for the vertical coordinate.  (In 2D we use only $x,z$.)  Note $z$ is measured positive upward.
 
-Within $\Omega$ we assume there is a matrix of porous material with spatially-variable porosity $\phi(x,y,z)$ and permeability $k(x,y,z)$; these are assumed independent of time.  An ideal gas flows through the medium, and we will take the properties of this gas to be positive constants: $R$ is the gas constant, $T$ is the absolute temperature, and $M$ is the molar mass.  The ideal gas law says the density $\rho$ and pressure $P$ are proportional via $c = RT/M$, a positive constant:
+Within $\Omega$ we assume there is a matrix of porous material with spatially-variable porosity $\phi(x,y,z)$ and permeability $k(x,y,z)$.  These fields are assumed independent of time, but not smooth, and in fact we will be interested in cases where they have large discontinuities.
+
+An ideal gas flows through the medium, and we will take the properties of this gas to be positive constants: $R$ is the gas constant, $T$ is the absolute temperature, and $M$ is the molar mass.  The ideal gas law says the density $\rho$ and pressure $P$ are proportional via $c = RT/M$, a positive constant:
 \begin{equation}
 c \rho = P.  \label{eq:ideal}
 \end{equation}
@@ -77,7 +79,7 @@ Here $\mu$ is the dynamic viscosity of the gas, again taken to be constant.  (Fo
 \begin{equation}
 \phi \frac{\partial \rho}{\partial t} + \Div \left(\rho\, \bq\right) = 0. \label{eq:pmtime:masscont}
 \end{equation}
-Here we are assuming no mass sources or sinks, as otherwise there would be an additional function on the right side.
+Here we are assuming no mass sources or sinks, as otherwise there would be an additional function on the right side.  Note that we can also write \eqref{eq:pmtime:masscont} using the (conserved) mass flux $\bsigma = \rho \bq$, with units of $\text{kg}\,\text{m}^{-2}\,\text{s}^{-1}$.  In this case the mass conservation equation is just $\partial \rho / \partial t + \Div \sigma = 0$.
 
 Certain observations regarding these equations should be made.  First, gas density must be non-negative: $\rho\ge 0$.  Second, relative to the classic mass continuity statement ``$\partial\rho/\partial t + \Div(\rho \bv)=0$'' \citep[for example]{Tadmor2012}, where $\bv$ is the fluid velocity, note that \eqref{eq:pmtime:masscont} is scaled with the (dimensionless) porosity $\phi$.  However, $\phi$ is also implicit in the definition of $\bq$ because it is the gas volume per unit area of any face of the porous matrix: $\bq = \phi \bv$.  While the velocity $\bv$ may be helpful in understanding the solution, it is not required when stating the model.
 
@@ -95,20 +97,13 @@ This form is comparable to the better-known heat equation
 \end{equation}
 An important property of \eqref{eq:heattime:primal} is that the operator $\Div \grad = \grad^2$ acts as an invertible matrix when finding the solution $u$.  However, since $\rho$ appears as a flux coefficient in \eqref{eq:pmtime:primal}, invertibility is lost in \eqref{eq:pmtime:primal} if $\rho\to 0$ somewhere.  Such ``degeneration'' of the diffusivity is a well-known concern with the porous medium equation \eqref{eq:pmtime:primal} \citep[for example]{Vazquez2007}, and it will influence the numerical solution method below.
 
-The model above is time dependent, but setting $\partial \rho/\partial t = 0$ yields the steady-state version.  First, for \eqref{eq:pmtime:masscont} we define the (conserved) mass flux
+The models above are time dependent, but setting $\partial \rho/\partial t = 0$ yields the steady-state version of the porous medium equation, here written in terms of the conserved mass density $\rho$:
 \begin{equation}
-\bsigma = \rho \bq, \label{eq:massflux}
-\end{equation}
-with units of $\text{kg}\,\text{m}^{-2}\,\text{s}^{-1}$.  The steady-state model is now written in terms of the conserved mass density $\rho$ and its flux $\bsigma$:
-\begin{subequations}
+- \Div\left(\frac{k}{\mu} \rho \grad\left(c \rho\right)\right) = 0
 \label{eq:pm:strong}
-\begin{align}
-\bsigma &= - \frac{k}{\mu} \rho \grad\left(c \rho\right) \label{eq:darcy} \\
-\Div \bsigma &= 0 \label{eq:masscont}
-\end{align}
-\end{subequations}
+\end{equation}
 
-Suitable boundary conditions must apply to system \eqref{eq:pm:strong}.  On the ``Dirichlet'' part of the boundary, denoted $\Gamma_D \subset \partial\Omega$, the density is given by a continuous function $\rho_D(x,y,z)$.  Equivalently the pressure may be given on $\Gamma_D$.  On the remainder of the boundary $\Gamma_N = \partial\Omega \setminus \Gamma_D$, the ``Neumann'' boundary, the normal mass flux is zero:
+Suitable boundary conditions must be applies to \eqref{eq:pm:strong}.  On the ``Dirichlet'' part of the boundary, denoted $\Gamma_D \subset \partial\Omega$, the density is given by a continuous function $\rho_D(x,y,z)$.  Equivalently the pressure may be given on $\Gamma_D$.  On the remainder of the boundary $\Gamma_N = \partial\Omega \setminus \Gamma_D$, the ``Neumann'' boundary, the normal mass flux is zero:
 \begin{subequations}
 \label{eq:strongbcs}
 \begin{align}
@@ -118,7 +113,7 @@ Suitable boundary conditions must apply to system \eqref{eq:pm:strong}.  On the 
 \end{subequations}
 It is straightforward to extend the model with provided values of the mass flux, i.e.~$(\bsigma\cdot \bn)|_{\Gamma_N}= \sigma_N$ where $\sigma_N$ is given, for a non-homogeneous Neumann condition.  System \eqref{eq:pm:strong} with boundary conditions \eqref{eq:strongbcs} apparently forms a well-posed problem as long as $\Gamma_D$ has positive measure (within $\partial\Omega$) and $\rho_D\ge 0$.  In the time-dependent case, classical solutions exist if additionally $\rho_D$ is actually positive and the initial density is positive \citep[Theorem 3.1]{Vazquez2007}.
 
-The equations above form a nonlinear model for the density $\rho$, with degeneration of the diffusivity if $\rho \to 0$.  However, a straightforward substitution allows us to rewrite the problem as a linear system, a linear diffusion problem.  Let
+The equations above form a nonlinear model for the density $\rho$, with degeneration of the diffusivity if $\rho \to 0$.  However, a straightforward substitution allows us to rewrite the problem as a linear diffusion problem.  Let
 \begin{equation}
 u = \rho^2 \label{eq:pm:defu}
 \end{equation}
@@ -126,17 +121,12 @@ and define convenience constant $\alpha = c/(2\mu)$.  Then \eqref{eq:pm:strong},
 \begin{subequations}
 \label{eq:pm:strongu}
 \begin{align}
-\bsigma &= - \alpha k \grad u & &\text{on } \Omega \label{eq:pm:strongu:darcy} \\
-\Div \bsigma &= 0 & & \label{eq:pm:strongu:masscont} \\
+- \alpha \Div\left(k \grad u \right) &= 0 & &\text{on } \Omega \label{eq:pm:eqn} \\
 u &= \rho_D^2 & &\text{on } \Gamma_D  \label{eq:pm:strongu:bcD} \\
 \bsigma\cdot \bn &= 0 & &\text{on } \Gamma_N  \label{eq:pm:strongu:bcN} 
 \end{align}
 \end{subequations}
-The (mixed) strong-form system \eqref{eq:pm:strongu} is a steady-state, semi-linear advection-diffusion problem, for the solution pair $(\bsigma,u)$.  Eliminating $\bsigma$ is also straightforward, yielding primal form
-\begin{equation}
--\alpha \Div(k\grad u) = 0. \label{eq:pm:primalstrongu}
-\end{equation}
-In either form, the density $\rho$ and pressure $P$ are easily recovered via \eqref{eq:pm:defu}, \eqref{eq:ideal} as long as the solution satisfies $u\ge 0$.
+The (mixed) strong-form system \eqref{eq:pm:strongu} is a steady-state, semi-linear advection-diffusion problem for the squared density $u$.  The density $\rho$ and pressure $P$ are easily recovered via \eqref{eq:pm:defu}, \eqref{eq:ideal} as long as the solution satisfies $u\ge 0$.
 
 
 \section{Weak forms and FE methods (for discontinuous permeability)}
@@ -187,33 +177,22 @@ The first equation in this system weakly enforces Darcy's law, and the second we
 
 \section{Firedrake implementation and solution}
 
-FIXME document basic CG method first
-
-To implement the above in Firedrake we must choose finite element spaces for $\bsigma$ and $u$.  To provide exact discrete mass conservation the vector fields $\bsigma$ will come from a space in which normal vectors are continuous across element boundaries.  However, the solution $u$, thus the density and pressure distributions $\rho,P$ also, are approximated by a discontinuous scalar field.  These stable element choices give discrete conservation, which we verify below.  On $\Gamma_N$ we must impose the essential requirement that $\bomega\cdot \bn=0$ on the function space; this is done through Firedrake's \verb|DirichletBC()| command.
-
-To start we may use the lowest-order Raviart-Thomas and DG pair for quadrilaterals which is stable for the mixed Poisson formulation \citep{Arnold2018}:
+To implement the above in Firedrake we must choose a finite element space $u$, which we take to be a space of $C^0$ piecewise-polynomial functions of degree $j$, namely $\text{CG}_j$ \citep{Elmanetal2014}.  On $\Gamma_D$ we must impose the essential requirement that $u=\rho_D^2$ on the solution, and $v=0$ on the test functions, and this is done through Firedrake's \verb|DirichletBC()| command.
 \begin{Verbatim}[fontsize=\small,frame=lines]
-S = FunctionSpace(mesh, 'RTCF', 1)
-H = FunctionSpace(mesh, 'DG', 0)
-SH = S * H
-w = Function(SH)
-sigma, u = split(w)
-omega, v = TestFunctions(SH)
+H = FunctionSpace(mesh, 'CG', j)
+u = Function(H, name='u (rho^2)')
+v = TestFunction(H)
 \end{Verbatim}
 Weak form \eqref{eq:weaku} then corresponds to the UFL code
 \begin{Verbatim}[fontsize=\small,frame=lines]
-F = dot(sigma, omega) * dx \
-    - alf * u * div(k * omega) * dx \
-    + alf * avg(u) * jump(k * omega, n) * dS \
-    + div(sigma) * v * dx \
-    + alf * k * u_bottom * dot(omega, n) * ds(3) \
-    + alf * k * u_top * dot(omega, n) * ds(4)
+alf = c / (2.0 * mu)
+F = alf * k * dot(grad(u), grad(v)) * dx(degree=4)
 \end{Verbatim}
-Here \verb|n = FacetNormal(mesh)|.  Note that \verb|ds(i)| requires indices \verb|i| for the appropriate boundary segments.
+The quadrature degree is fixed so as to disable Firedrake's automatic quadrature degree mechanism, which can generate unstable and inefficient degrees which are too large.
 
 We solve the equations by a sparse direct matrix method \citep{Amestoy2001}:
 \begin{Verbatim}[fontsize=\small,frame=lines]
-solve(F == 0, w, bcs=[BCs,],
+solve(F == 0, u, bcs=[BCs,],
       solver_parameters = {'snes_type': 'ksponly',
                            'ksp_type': 'preonly',
                            'pc_type': 'lu',
