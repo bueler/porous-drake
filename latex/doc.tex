@@ -121,63 +121,41 @@ and define convenience constant $\alpha = c/(2\mu)$.  Then \eqref{eq:pm:strong},
 \begin{subequations}
 \label{eq:pm:strongu}
 \begin{align}
-- \alpha \Div\left(k \grad u \right) &= 0 & &\text{on } \Omega \label{eq:pm:eqn} \\
+- \alpha \Div\left(k \grad u \right) &= 0 & &\text{on } \Omega \label{eq:pm:strongu:eqn} \\
 u &= \rho_D^2 & &\text{on } \Gamma_D  \label{eq:pm:strongu:bcD} \\
-\bsigma\cdot \bn &= 0 & &\text{on } \Gamma_N  \label{eq:pm:strongu:bcN} 
+\grad u \cdot \bn &= 0 & &\text{on } \Gamma_N  \label{eq:pm:strongu:bcN} 
 \end{align}
 \end{subequations}
 The (mixed) strong-form system \eqref{eq:pm:strongu} is a steady-state, semi-linear advection-diffusion problem for the squared density $u$.  The density $\rho$ and pressure $P$ are easily recovered via \eqref{eq:pm:defu}, \eqref{eq:ideal} as long as the solution satisfies $u\ge 0$.
 
 
-\section{Weak forms and FE methods (for discontinuous permeability)}
+\section{Weak form and FE method (for discontinuous permeability)}
 
-\subsection{Primal method using continuous density}  FIXME document it
+In this section we derive the weak form which is needed for an FE method.  The method we use is conforming, that is, it finds a continuous approximate solution living in the same function space where the continuum solution lives.  Both the continuum and FE solutions solve the same weak form, though the latter is over a smaller, finite-dimensional subspace.
 
-\subsection{Conservative mixed method using discontinuous density}  We should also be able to solve solve system \eqref{eq:pm:strongu} by a conservative mixed finite element (FE) method \citep{Boffi2013}.  FIXME In this section we derive the weak form, needed for an FE method, via an element-wise weak form.  This derivation allows the permeability field to be discontinuous across element edges, and it makes the conservation property of the FE scheme manifestly clear.
-
-Let $E$ be any well-behaved open subset of $\Omega$ with piecewise-$C^1$ boundary.  Assume that the exact, continuum solution $\bsigma,u$ of \eqref{eq:pm:strongu} are sufficiently continuous/smooth so that \eqref{eq:pm:strongu} holds pointwise, to allow the following derivation.  We multiply \eqref{eq:pm:strongu:darcy} by a vector-valued test function $\bomega$, and \eqref{eq:pm:strongu:masscont} by a scalar test function $v$, and integrate over $E$:
-\begin{subequations}
-\label{eq:pm:elementweak}
-\begin{align}
-\int_E \bsigma\cdot \bomega\,\dx + \int_E \alpha k \grad u \cdot \bomega\,\dx &= 0 \label{eq:pm:elementweak:darcy} \\
-\int_E (\Div \bsigma) v\,\dx &= 0 \label{eq:pm:elementweak:masscont}
-\end{align}
-\end{subequations}
-Here $\dx = dx\,dy\,dz$ denotes the volume measure, or area measure $\dx = dx\,dz$ in 2D.
-
-The permeability field $k(x,y,z)$ may be discontinuous, but for the purposes of the following FE method we will assume that the element faces (edges in 2D) include any of its discontinuities.  (In other words, we assume the mesh is adapted to any permeability discontinuities.)  Thus if $E$ is an (open) element in the mesh, we will assume that all functions and gradients in \eqref{eq:pm:elementweak} are continuous over $E$.  Also, on $\partial E$ let $\ds$ denote the boundary measure and $\bn$ the outward normal unit vector.  Recall the divergence theorem $\int_E \Div \bX\,\dx = \int_{\partial E} \bX\cdot \bn\,\ds$, and the product rule $\Div(f\bX) = \grad f \cdot \bX + f \Div \bX$.  Using these assumptions and tools, integration by parts on a term in \eqref{eq:pm:elementweak:darcy} removes the derivative from $u$:
+Recall that $H^1(\Omega)$ denotes the Sobolev (Hilbert) space of functions on $\Omega$ with weak derivatives which are square-integrable functions \citep[chapter 5]{Evans2010}, and write $H_0^1(\Omega)$ for the subspace of $H^1(\Omega)$ which have zero trace along $\Gamma_D$.  We multiply the strong form equation \eqref{eq:pm:strongu:eqn} by a test function $v \in H_0^1(\Omega)$.  For a scalar function $f$ and a vector field $\bX$, recall the divergence theorem $\int_\Omega \Div \bX\,\dx = \int_{\partial \Omega} \bX\cdot \bn\,\ds$ and the product rule $\Div(f\bX) = \grad f \cdot \bX + f \Div \bX$.  Using these tools, integration by parts generates
 \begin{equation}
-\int_E \alpha k \grad u \cdot \bomega\,\dx = - \int_E \alpha u \Div\left(k \bomega\right)\,\dx + \int_{\partial E} \alpha k u \bomega\cdot\bn\,\ds \label{eq:elementweak:ibp}
+\int_\Omega \alpha k \grad u \cdot \grad v\,\dx - \int_{\partial\Omega} k v \grad u \cdot \bn\,\ds = 0 \label{eq:weaku:early}
+\end{equation}
+Since $v\in H_0^1(\Omega)$, the portion of the boundary integral which is in $\Gamma_D$ is zero, and \eqref{eq:pm:strongu:bcN} implies that the remaining integral over $\Gamma_N$ is zero.  Thus 
+\begin{equation}
+\int_\Omega \alpha k \grad u \cdot \grad v\,\dx = 0. \label{eq:weaku}
 \end{equation}
 
-Next we assume that the mesh (triangulation) $\cT_h$ exactly covers the domain: $\bigcup_{E\in\cT_h} \bar E = \bar \Omega$.  Consider all the faces (edges) in the mesh.  If $\Gamma_0$ is the union of the internal faces then
-\begin{equation}
-\bigcup_{E\in\cT_h} \partial E = \Gamma_0 \cup \Gamma_D \cup \Gamma_N.
-\end{equation}
-By \eqref{eq:pm:strongu:bcD}, in integrals along $\Gamma_D$ the value $u=\rho_D^2$ is given.  The Neumann condition \eqref{eq:pm:strongu:bcN} along $\Gamma_N$ is actually essential for $\bsigma\cdot\bn$, so it involves a modification of the function space in which $\bsigma$ and $\bomega$ live.  The implementation is addressed below, but we have $\int_{\Gamma_N} \alpha k u \bomega\cdot\bn\,\ds = 0$ because $\bomega\cdot\bn=0$ along $\Gamma_N$.
+While our FE method will follow a standard approach to Poisson equations, it is worth considering the theoretical setting for \eqref{eq:weaku}, especially because we will solve cases where the permeability field $k(x,y,z)$ has discontinuous jumps.  First, we assume that $k\in L^\infty(\Omega)$ with a positive lower bound; there is $k_0>0$ so that $k \ge k_0$.  Such a lower bound implies that the operator $L w = - \Div(k \grad w)$ is uniformly elliptic \citep[section 6.1]{Evans2010}.  We will assume that the boundary value $u_D = \rho_D^2$, defined only on $\Gamma_D$, is the trace of some $g\in H^1(\Omega)$, so that if $u\in H^1(\Omega)$ then $\tilde u = u - g \in H_0^1(\Omega)$.  The theory of problem \eqref{eq:weaku} then shows that there is a unique weak solution $u\in H^1(\Omega)$.  Specifically, apply Theorem 3 in section 6.2 of \citep{Evans2010}, noting the comments on pages 315 and 322, regarding boundary values and the constant in the Poincare inequality, respectively.  It is this weak solution of \eqref{eq:weaku} which we are seeking to approximate, and indeed the earlier strong form \eqref{eq:pm:strongu:eqn} generally will not have a solution so that the repeated (i.e.~second) derivative in that equation is actually meaningful.
 
-To sum equations \eqref{eq:pm:elementweak:darcy} and \eqref{eq:pm:elementweak:masscont} over all elements $E$ in the mesh one must consider the $\partial E$ integrals in \eqref{eq:elementweak:ibp}, specifically for internal boundaries $e$ in $\Gamma_0$.  Each such face (edge) $e$ has two adjacent elements.  Following standard conventions \citep{Arnold2002,Ham2023}, there is an arbitrary choice of ``$+$'' and ``$-$'' adjacent elements for $e$, thus the sum of \eqref{eq:pm:elementweak:darcy} over all elements has become:
-\begin{align}
-\int_\Omega \bsigma\cdot \bomega\,\dx - &\int_\Omega \alpha u \Div\left(k \bomega\right)\,\dx \label{eq:elementweak:darcy:second} \\
-&+ \sum_{e\in\Gamma_0} \int_e \alpha \left(k^+ u^+ \bomega^+\cdot\bn^+ + k^- u^- \bomega^-\cdot\bn^-\right)\,\ds = - \int_{\Gamma_D} \alpha k \rho_D^2 \bomega\cdot\bn\,\ds \notag
-\end{align}
-Based on experiments, we believe that the internal edge integrals $e\in\Gamma_0$ should be approximated as follows using standard notation \citep{Arnold2002}.  For a scalar function $f$ defined on the closure of each adjacent element to the face (edge) $e$ let $\{f\} = \frac{1}{2} (f_+ + f_-)$ denote the average across $e$.  For a vector-valued function $\bv$ let $\jump{\bv} = \bv_+ \cdot \bn_+ + \bv_- \cdot \bn_-$ denote the jump across the face $e$, a scalar.  We will keep the known jump of $k$, but we average the solution $u$ across faces.
+FIXME The permeability field $k(x,y,z)$ may be discontinuous, but for the purposes of the following FE method we will assume that the element faces (edges in 2D) include any of its discontinuities.  (In other words, we assume the mesh is adapted to any permeability discontinuities.)
 
-The result is the following weak form system, for $\bsigma$ and $u$, which we plan to implement after identifying suitable FE function spaces:
-\begin{subequations}
-\label{eq:weaku}
-\begin{align}
-\int_\Omega \bsigma\cdot \bomega\,\dx - &\int_\Omega \alpha u \Div\left(k \bomega\right)\,\dx \label{eq:weaku:darcy} \\
-&+ \sum_{e\in\Gamma_0} \int_e \alpha\, \{u\} \jump{k\bomega}\,\ds = - \int_{\Gamma_D} \alpha k \rho_D^2 \bomega\cdot\bn\,\ds \qquad \text{for all } \bomega \notag \\
-\int_\Omega (\Div \bsigma) v\,\dx &= 0 \qquad \text{for all } v  \label{eq:weaku:masscont}
-\end{align}
-\end{subequations}
-The first equation in this system weakly enforces Darcy's law, and the second weakly enforces conservation of mass.  The density $\rho$ and pressure $P$ are recovered from $u$ via \eqref{eq:pm:defu} and \eqref{eq:ideal}.
+FIXME integrate over domains where $k$ is constant, and observe that the solution of this weak form has jump integrals which are zero
+
+FIXME Next we assume that the mesh (triangulation) $\cT_h$ exactly covers the domain: $\bigcup_{E\in\cT_h} \bar E = \bar \Omega$.
+
+FIXME The density $\rho$ and pressure $P$ are recovered from $u$ via \eqref{eq:pm:defu} and \eqref{eq:ideal}.
 
 
 \section{Firedrake implementation and solution}
 
-To implement the above in Firedrake we must choose a finite element space $u$, which we take to be a space of $C^0$ piecewise-polynomial functions of degree $j$, namely $\text{CG}_j$ \citep{Elmanetal2014}.  On $\Gamma_D$ we must impose the essential requirement that $u=\rho_D^2$ on the solution, and $v=0$ on the test functions, and this is done through Firedrake's \verb|DirichletBC()| command.
+To implement the above in Firedrake we must choose a finite element space $u$, which we take to be a space of $C^0$ piecewise-polynomial functions of degree $j$, namely $\text{CG}_j$ \citep{Elman2014}.  On $\Gamma_D$ we must impose the essential requirement that $u=\rho_D^2$ on the solution, and $v=0$ on the test functions, and this is done through Firedrake's \verb|DirichletBC()| command.
 \begin{Verbatim}[fontsize=\small,frame=lines]
 H = FunctionSpace(mesh, 'CG', j)
 u = Function(H, name='u (rho^2)')
