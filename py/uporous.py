@@ -131,8 +131,9 @@ if args.problem == '2d':
     print(f'  mass flux into bottom   = {-bottomflux:13.6e}')
     print(f'  imbalance               = {imbalance:13.6e}')
 
-    print('computing mass flux (kg m-2 s-1) from units ...')
-    printfluxes2d(mesh, sigma, topflux)
+    if args.k_type == 'synth':
+        print('computing mass flux (kg m-2 s-1) from surface units ...')
+        printfluxes2d(mesh, sigma, topflux)
 
     if args.problem == '2d' and args.k_type == 'verif':
         uexact = Function(H).interpolate(getuverif2d(mesh))
