@@ -10,21 +10,22 @@ a file.  Note that options -k_type, -mx, -triangles are
 ignored in the extrude case.
 """, formatter_class=RawTextHelpFormatter)
 parser.add_argument('-bottomz', type=float, default=0.0, metavar='ZB',
-                    help='elevation of base of domain (problem extrude) [default 0.0]')
-parser.add_argument('-k_type', metavar='X', default='synth', choices=['synth','flat','verif'],
-                    help='permeability structures: synth|flat|verif (problem 2d) [default synth]')
+                    help='elevation of base of domain (-dim 3 only) [default 0.0]')
+parser.add_argument('-dim', type=int, metavar='D', default=2,
+                    help='problem dimension: 2|3 [default 2]')
+parser.add_argument('-k_type', metavar='X', default='synth',
+                    choices=['synth','flat','verif'],
+                    help='permeability structures: synth|flat|verif (-dim 2 only) [default synth]')
 parser.add_argument('-mesh2d', metavar='FILE', default='',
-                    help='file name for 2d base mesh (problem extrude)')
+                    help='file name for 2d base mesh (-dim 3 only)')
 parser.add_argument('-mx', type=int, default=100, metavar='MX',
-                    help='x resolution (problem 2d) [default 100]')
+                    help='x resolution (-dim 2 only) [default 100]')
 parser.add_argument('-mz', type=int, default=22, metavar='MZ',
                     help='z resolution [default 22]')
 parser.add_argument('-order', type=int, default=1, metavar='J',
                     help='polynomial order for density rho [default 1]')
-parser.add_argument('-problem', metavar='X', default='2d', choices=['2d', 'extrude'],
-                    help='problem type: 2d|extrude [default 2d]')
 parser.add_argument('-triangles', action='store_true', default=False,
-                    help='use triangular elements (problem 2d)')
+                    help='use triangular elements (-dim 2 only)')
 args, passthroughoptions = parser.parse_known_args()
 
 import petsc4py
@@ -35,11 +36,11 @@ from physical import R, T, M, mu, Patm
 from cases2d import getmesh2d, getgeounits2d, getgeounitsverif2d, \
                     getdirbcs2d, getuverif2d, printfluxes2d
 
-if args.problem == '2d':
+if args.dim == 2:
     elements = 'triangular' if args.triangles else 'quadrilateral'
     print(f'generating 2d {elements} mesh of {args.mx} x {args.mz} elements ...')
     mesh = getmesh2d(args.mx, args.mz, quad=not args.triangles)
-else: # -problem extrude
+else: # 3d
     print(f'reading 2d surface topography ("basemesh") from {args.mesh2d} ...')
     with CheckpointFile(args.mesh2d, 'r') as afile:
         basemesh = afile.load_mesh('basemesh')
@@ -55,7 +56,7 @@ else: # -problem extrude
     ztop.dat.data[:] = ztopbm.dat.data_ro[:]
     x, y, z01 = SpatialCoordinate(mesh)  # note  0 <= z01 <= 1  here
     Vcoord = mesh.coordinates.function_space()
-    zrescale = (ztop + args.bottomz) * z01 + args.bottomz
+    zrescale = (ztop - args.bottomz) * z01 + args.bottomz
     XYZ = Function(Vcoord).interpolate(as_vector([x, y, zrescale]))
     mesh.coordinates.assign(XYZ)
 
@@ -65,12 +66,12 @@ u = Function(H, name='u (rho^2)')
 v = TestFunction(H)
 
 # permeability and porosity fields
-if args.problem == '2d':
+if args.dim == 2:
     if args.k_type == 'verif':
         k, phi = getgeounitsverif2d(mesh)
     else:
         k, phi = getgeounits2d(mesh, flat=(args.k_type == 'flat'))
-else: # -problem extrude
+else: # 3d
     # FIXME come up with preferred fields for k(x,y,z) and phi(x,y,z)
     from cases2d import kCV, phiCV
     k = Constant(kCV)
@@ -81,9 +82,9 @@ c = (R * T) / M   # ideal gas law is  c rho = P  (J kg-1)
 alf = c / (2.0 * mu)
 F = alf * k * dot(grad(u), grad(v)) * dx(degree=4)
 
-if args.problem == '2d':
+if args.dim == 2:
     bcs = getdirbcs2d(mesh, H)
-else: # -problem extrude
+else: # 3d
     u_top = (Patm / c)**2
     Pbot = 1100000.0   # Pa; = 11 bar
     u_bot = (Pbot / c)**2
@@ -106,35 +107,32 @@ if norm(uneg, 'L2') > 0.0:
     print('         see "uneg" field in output file')
 upos = Function(H).interpolate((u + abs(u))/2.0)
 
-if args.problem == '2d':
+if args.dim == 2:
     # recover mass flux sigma to measure conservation
-    if args.problem == '2d':
-        if args.triangles:
-            S = FunctionSpace(mesh, 'RT', args.order + 1)
-        else:
-            S = FunctionSpace(mesh, 'RTCF', args.order + 1)
-    else: # -problem extrude
-        assert NotImplementedError # FIXME extrude
+    if args.triangles:
+        S = FunctionSpace(mesh, 'RT', args.order + 1)
+    else:
+        S = FunctionSpace(mesh, 'RTCF', args.order + 1)
     sigma = Function(S).project(- alf * k * grad(u))
     sigma.rename('sigma (mass flux; kg m-2 s-1)')
 
-    print('measuring mass conservation ...')
+    print('mass conservation (kg m-2 s-1):')
     n = FacetNormal(mesh)
-    if args.problem == '2d':
+    if args.dim == 2:
         bottomflux = assemble(dot(sigma,n) * ds(3))
         topflux = assemble(dot(sigma,n) * ds(4))
     else: # -problem extrude
         assert NotImplementedError # FIXME extrude
     imbalance = topflux + bottomflux
-    print(f'  mass flux out of top    = {topflux:13.6e}')
-    print(f'  mass flux into bottom   = {-bottomflux:13.6e}')
+    print(f'  flux out of top         = {topflux:13.6e}')
+    print(f'  flux into bottom        = {-bottomflux:13.6e}')
     print(f'  imbalance               = {imbalance:13.6e}')
 
     if args.k_type == 'synth':
-        print('computing mass flux (kg m-2 s-1) from surface units ...')
+        print('mass flux (kg m-2 s-1) for each surface unit:')
         printfluxes2d(mesh, sigma, topflux)
 
-    if args.problem == '2d' and args.k_type == 'verif':
+    if args.k_type == 'verif':
         uexact = Function(H).interpolate(getuverif2d(mesh))
         err = errornorm(u, uexact, norm_type='L2') / norm(uexact, norm_type='L2')
         print(f'verification case: |u-u_exact|_2/|u|_2 = {err:6.2e}')
@@ -151,7 +149,7 @@ if args.problem == '2d':
     print('saving fields to result.pvd ...')
     VTKFile("result.pvd").write(sigma, u, uneg, rho, P, q, v)
 
-else:
+else: # 3d
     # FIXME generate sigma, q, v; measure conservation; write sigma, q, v
     rho = Function(H).interpolate(sqrt(abs(u)))
     rho.rename('rho (density; kg m-3)')

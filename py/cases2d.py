@@ -1,6 +1,10 @@
 from firedrake import *
 from physical import R, T, M, mu, Patm
 
+# FIXME build pytest unit test from this stuff, i.e.
+# def test_verif2d():
+# def test_synth2d():
+
 # overall dimensions of domain
 lx = 100.0              # width (m)
 lz = 22.0               # height (m)

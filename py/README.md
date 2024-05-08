@@ -48,13 +48,15 @@ The problem can be solved on an extruded 3D mesh for the Obsidian Dome topograph
 
 This writes a 2D mesh, with a surface elevation field, to the HDF5 format file `odome.h5`.  Then 2D mesh is read, and extruded to 3D, by the solver as follows:
 
-        $ python3 uporous.py -problem extrude -mesh2d odome.h5
+        $ python3 uporous.py -dim 3 -mesh2d odome.h5 -bottomz -100
 
-Note that options `-mz`, `-order`, and `-depth` make sense in this case.  However, the direct solver has severe resolution limitations in 3D.
+Note that options `-mz` and `-order` also make sense in this case.
 
 FIXME: this case is not fully implemented
 
 TODO: useful units, generation of sigma/q/v outputs, reported mass conservation
+
+FIXME: the direct solver has severe resolution limitations in 3D
 
 ## Visualization
 
