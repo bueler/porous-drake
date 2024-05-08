@@ -1,10 +1,6 @@
 from firedrake import *
 from physical import R, T, M, mu, Patm
 
-# FIXME build pytest unit test from this stuff, i.e.
-# def test_verif2d():
-# def test_synth2d():
-
 # overall dimensions of domain
 lx = 100.0              # width (m)
 lz = 22.0               # height (m)
@@ -55,7 +51,7 @@ def getgeounitsverif2d(mesh):
     phi = conditional(z < zCVOB, phiCV, phiupper)
     return k, phi
 
-def printfluxes2d(mesh, sigma, topflux):
+def unitsurfacefluxes2d(mesh, sigma, topflux, printthem=False):
     x, z = SpatialCoordinate(mesh)
     # surface portion indicator functions
     dx = abs(x - xc)
@@ -69,9 +65,14 @@ def printfluxes2d(mesh, sigma, topflux):
     FVflux = assemble(dot(FVind * sigma,n) * ds(4))
     fluxsum = CVflux + OBflux + FVflux
     assert abs(topflux - fluxsum)  < 1.0e-14 * topflux  # consistency with topflux
-    print(f'  CV unit flux            = {CVflux:13.6e} ({100*CVflux/topflux:5.2f} %)')
-    print(f'  OB unit flux            = {OBflux:13.6e} ({100*OBflux/topflux:5.2f} %)')
-    print(f'  FV unit flux            = {FVflux:13.6e} ({100*FVflux/topflux:5.2f} %)')
+    CVper = 100*CVflux/topflux
+    OBper = 100*OBflux/topflux
+    FVper = 100*FVflux/topflux
+    if printthem:
+        print(f'  CV unit flux            = {CVflux:13.6e} ({CVper:5.2f} %)')
+        print(f'  OB unit flux            = {OBflux:13.6e} ({OBper:5.2f} %)')
+        print(f'  FV unit flux            = {FVflux:13.6e} ({FVper:5.2f} %)')
+    return CVper, OBper, FVper
 
 def getdirbcs2d(mesh, H):
     BCs = [DirichletBC(H, u_bot, 3),

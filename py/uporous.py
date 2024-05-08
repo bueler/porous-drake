@@ -34,7 +34,7 @@ from firedrake import *
 from firedrake.output import VTKFile
 from physical import R, T, M, mu, Patm
 from cases2d import getmesh2d, getgeounits2d, getgeounitsverif2d, \
-                    getdirbcs2d, getuverif2d, printfluxes2d
+                    getdirbcs2d, getuverif2d, unitsurfacefluxes2d
 
 if args.dim == 2:
     elements = 'triangular' if args.triangles else 'quadrilateral'
@@ -130,7 +130,7 @@ if args.dim == 2:
 
     if args.k_type == 'synth':
         print('mass flux (kg m-2 s-1) for each surface unit:')
-        printfluxes2d(mesh, sigma, topflux)
+        unitsurfacefluxes2d(mesh, sigma, topflux, printthem=True)
 
     if args.k_type == 'verif':
         uexact = Function(H).interpolate(getuverif2d(mesh))
