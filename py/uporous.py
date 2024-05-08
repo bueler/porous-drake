@@ -40,7 +40,7 @@ if args.problem == '2d':
     print(f'generating 2d {elements} mesh of {args.mx} x {args.mz} elements ...')
     mesh = getmesh2d(args.mx, args.mz, quad=not args.triangles)
 else: # -problem extrude
-    print(f'reading 2d topography (base mesh) from {args.mesh2d} ...')
+    print(f'reading 2d surface topography ("basemesh") from {args.mesh2d} ...')
     with CheckpointFile(args.mesh2d, 'r') as afile:
         basemesh = afile.load_mesh('basemesh')
         ztopbm = afile.load_function(basemesh, 'z')
