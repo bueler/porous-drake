@@ -24,7 +24,7 @@ from firedrake.output import VTKFile
 
 # generate a Firedrake mesh, but note that it is *not* structured!:
 # the ordering of vertices is *not* a straightforward map (i,j) --> (node index k)
-mesh = RectangleMesh(mx-1, my-1, xx.max(), yy.max())
+mesh = RectangleMesh(mx-1, my-1, xx.max(), yy.max(), name='basemesh')
 #mesh = RectangleMesh(mx-1, my-1, xx.max(), yy.max(), quadrilateral=True)  # also works
 x_m = mesh.coordinates.dat.data_ro[:,0]
 y_m = mesh.coordinates.dat.data_ro[:,1]
@@ -37,5 +37,13 @@ z = Function(V, name='z(x,y)')
 from scipy.interpolate import interpn
 z.dat.data[:] = interpn((xx[0,:], yy[:,0]), zz.T, (x_m, y_m))
 
-print('writing surface elevation field z(x,y) to result.pvd ...')
-VTKFile("result.pvd").write(z)
+if False:  # optional .pvd version
+    print('writing surface elevation field z(x,y) to odome.pvd ...')
+    VTKFile('odome.pvd').write(z)
+
+# inspect contents of HDF5 file with
+#   $ h5dump -n odome.h5 |less
+with CheckpointFile('odome.h5', 'w') as afile:
+    print('writing mesh and surface elevation field z(x,y) to odome.h5 ...')
+    afile.save_mesh(mesh)
+    afile.save_function(z)
