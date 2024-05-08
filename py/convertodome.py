@@ -8,7 +8,6 @@ xx -= xx.min()
 yy = np.reshape(A[:,1],(mx,my))
 yy -= yy.min()
 zz = np.reshape(A[:,2],(mx,my))
-zz -= zz.min()
 # print(xx[0,:])  # ascending
 # print(yy[:,0])  # descending ... why?
 
