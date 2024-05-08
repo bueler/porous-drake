@@ -62,30 +62,30 @@ style=apa, natbib=true,
 
 \section{A porous medium model for Darcy-type gas flow}
 
-Suppose $\Omega$ is a 2D or 3D domain with well-behaved boundary, such as a rectangle or other polygon in 2D, or a polyhedron in 3D.  We will use $x,y$ for the horizontal coordinates and $z$ for the vertical coordinate.  (In 2D we use only $x,z$.)  Note $z$ is measured positive upward.
+Suppose $\Omega$ is a 2D or 3D domain with well-behaved boundary, such as a rectangle or other polygon in 2D, or a polyhedron in 3D.  We will use $x,y$ for the horizontal coordinates and $z$ for the vertical coordinate.  (In 2D we use only $x,z$.)  Note distances are measured in meters and $z$ is measured positive upward.
 
-Within $\Omega$ we assume there is a matrix of porous material with spatially-variable porosity $\phi(x,y,z)$ and permeability $k(x,y,z)$.  These fields are assumed independent of time, but not smooth, and in fact we will be interested in cases where they have large discontinuities.
+Within $\Omega$ we assume there is a matrix of porous material with spatially-variable porosity $\phi(x,y,z)$ and permeability $k(x,y,z)$, which are dimensionless and in (SI units of) $\text{m}^2$, respectively.  These fields are assumed independent of time, but they are not assumed to be smooth.  In fact we will be interested in cases where they have large discontinuities.
 
-An ideal gas flows through the medium, and we will take the properties of this gas to be positive constants: $R$ is the gas constant, $T$ is the absolute temperature, and $M$ is the molar mass.  The ideal gas law says the density $\rho$ and pressure $P$ are proportional via $c = RT/M$, a positive constant:
+An ideal gas flows through the porous matrix, and we will take this gas to be ideal and isothermal.  The following are positive constants: $R$ is the gas constant, $T$ is the absolute temperature, and $M$ is the molar mass.  The ideal gas law says the density $\rho$ and pressure $P$ are proportional via $c = RT/M$:
 \begin{equation}
 c \rho = P.  \label{eq:ideal}
 \end{equation}
 
-We assume that the gas flow satisfies Darcy's law \citep{Fowler2011}, thus the volumetric flux $\bq$ is driven by the gradient of the gas pressure:
+We assume that the gas flow satisfies Darcy's law \citep{Fowler2011}, thus the volumetric flux is driven by the gradient of the gas pressure:
 \begin{equation}
 \bq = - \frac{k}{\mu} \grad P \label{eq:pmtime:darcy}
 \end{equation}
-Here $\mu$ is the dynamic viscosity of the gas, again taken to be constant.  (For now we ignore gravity, which contributes a term \citep{Collinson2012}.)  Because mass is conserved, additionally we have:
+Here $\mu$ is the dynamic viscosity of the gas, again taken to be constant.\footnote{Temporarily we are ignoring gravity, which contributes a term \citep{Collinson2012}.  The size of the change in the solution, as a result of this additional term, are not so clear?}  Because mass is conserved, additionally we have:
 \begin{equation}
 \phi \frac{\partial \rho}{\partial t} + \Div \left(\rho\, \bq\right) = 0. \label{eq:pmtime:masscont}
 \end{equation}
-Here we are assuming no mass sources or sinks, as otherwise there would be an additional function on the right side.  Note that we can also write \eqref{eq:pmtime:masscont} using the (conserved) mass flux $\bsigma = \rho \bq$, with units of $\text{kg}\,\text{m}^{-2}\,\text{s}^{-1}$.  In this case the mass conservation equation is just $\partial \rho / \partial t + \Div \sigma = 0$.
+Here we are assuming no mass sources or sinks, as otherwise there would be an additional function on the right side.  Note that we can also write \eqref{eq:pmtime:masscont} using the (conserved) mass flux $\bsigma = \rho \bq$.  In this case the mass conservation equation is just $\partial \rho / \partial t + \Div \sigma = 0$.
 
 Certain observations regarding these equations should be made.  First, gas density must be non-negative: $\rho\ge 0$.  Second, relative to the classic mass continuity statement ``$\partial\rho/\partial t + \Div(\rho \bv)=0$'' \citep[for example]{Tadmor2012}, where $\bv$ is the fluid velocity, note that \eqref{eq:pmtime:masscont} is scaled with the (dimensionless) porosity $\phi$.  However, $\phi$ is also implicit in the definition of $\bq$ because it is the gas volume per unit area of any face of the porous matrix: $\bq = \phi \bv$.  While the velocity $\bv$ may be helpful in understanding the solution, it is not required when stating the model.
 
 \newcommand{\Patm}{P_{\text{atm}}}
 
-Regarding units of the solution variables in the above equations, $\rho(t,x,y,z)$ is in SI units of $\text{kg}\,\text{m}^{-3}$, $P(t,x,y,z)$ in $\text{Pa} = \text{N}\,\text{m}^{-2}$, and $\bq(t,x,y,z)$ in $\text{m}^3\,\text{m}^{-2}\,\text{s}^{-1} = \text{m}\,\text{s}^{-1}$.  Also the porosity $\phi$ is a dimensionless ratio of volumes, thus $0\le \phi \le 1$, the permeability $k$ is in $\text{m}^2$, the constant $c$ is in $\text{J}\,\text{kg}^{-1}$, and the dynamic viscosity $\mu$ is in $\text{Pa}\,\text{s}$.
+Regarding units of the solution fields, $\rho(t,x,y,z)$ is in (SI units of) $\text{kg}\,\text{m}^{-3}$, $P(t,x,y,z)$ in $\text{Pa} = \text{N}\,\text{m}^{-2}$, $\bq(t,x,y,z)$ in $\text{m}^3\,\text{m}^{-2}\,\text{s}^{-1} = \text{m}\,\text{s}^{-1}$, and $\bsigma$ in $\text{kg}\,\text{m}^{-2}\,\text{s}^{-1}$.  The constant $c$ is in $\text{J}\,\text{kg}^{-1}$, and the dynamic viscosity $\mu$ is in $\text{Pa}\,\text{s}$.
 
 Considering the system of equations \eqref{eq:ideal}--\eqref{eq:pmtime:masscont}, it is straightforward to eliminate the pressure $P$ and flux $\bq$, if this is desired:
 \begin{equation}
@@ -103,46 +103,38 @@ The models above are time dependent, but setting $\partial \rho/\partial t = 0$ 
 \label{eq:pm:strong}
 \end{equation}
 
-Suitable boundary conditions must be applies to \eqref{eq:pm:strong}.  On the ``Dirichlet'' part of the boundary, denoted $\Gamma_D \subset \partial\Omega$, the density is given by a continuous function $\rho_D(x,y,z)$.  Equivalently the pressure may be given on $\Gamma_D$.  On the remainder of the boundary $\Gamma_N = \partial\Omega \setminus \Gamma_D$, the ``Neumann'' boundary, the normal mass flux is zero:
-\begin{subequations}
-\label{eq:strongbcs}
-\begin{align}
-\rho|_{\Gamma_D}               &= \rho_D \\
-(\bsigma\cdot \bn)|_{\Gamma_N} &= 0
-\end{align}
-\end{subequations}
-It is straightforward to extend the model with provided values of the mass flux, i.e.~$(\bsigma\cdot \bn)|_{\Gamma_N}= \sigma_N$ where $\sigma_N$ is given, for a non-homogeneous Neumann condition.  System \eqref{eq:pm:strong} with boundary conditions \eqref{eq:strongbcs} apparently forms a well-posed problem as long as $\Gamma_D$ has positive measure (within $\partial\Omega$) and $\rho_D\ge 0$.  In the time-dependent case, classical solutions exist if additionally $\rho_D$ is actually positive and the initial density is positive \citep[Theorem 3.1]{Vazquez2007}.
+Suitable boundary conditions must be applies to \eqref{eq:pm:strong}.  On the Dirichlet portion of the boundary, denoted $\Gamma_D \subset \partial\Omega$, the density is given by a continuous function $\rho_D(x,y,z)$.  Equivalently the pressure may be given on $\Gamma_D$.  On the remainder of the boundary $\Gamma_N = \partial\Omega \setminus \Gamma_D$, the Neumann portion, the normal mass flux is zero: $\bsigma\cdot \bn = 0$.  It is straightforward to extend the model with provided values of the mass flux, i.e.~$\bsigma\cdot \bn = \sigma_N$ where $\sigma_N$ is given, which is a non-homogeneous Neumann condition.  System \eqref{eq:pm:strong} with these boundary conditions apparently forms a well-posed problem as long as $\Gamma_D$ has positive measure (within $\partial\Omega$) and $\rho_D\ge 0$.  In the time-dependent case, classical solutions exist if additionally $\rho_D$ is actually positive and the initial density is positive \citep[Theorem 3.1]{Vazquez2007}.
 
-The equations above form a nonlinear model for the density $\rho$, with degeneration of the diffusivity if $\rho \to 0$.  However, a straightforward substitution allows us to rewrite the problem as a linear diffusion problem.  Let
+A straightforward substitution converts the above nonlinear model for the density $\rho$, which has degenerate diffusivity as $\rho \to 0$, into a constant-coefficient linear diffusion problem.\footnote{This returns to being nonlinear if we include gravity, which we should, but the nonlinearity would appear to be milder in the $u$ form than the $\rho$ form.}  Let
 \begin{equation}
 u = \rho^2 \label{eq:pm:defu}
 \end{equation}
-and define convenience constant $\alpha = c/(2\mu)$.  Then \eqref{eq:pm:strong}, \eqref{eq:strongbcs} becomes
+and define convenience constant $\alpha = c/(2\mu)$.  Then equation \eqref{eq:pm:strong}, along with the boundary conditions, becomes the system
 \begin{subequations}
 \label{eq:pm:strongu}
 \begin{align}
 - \alpha \Div\left(k \grad u \right) &= 0 & &\text{on } \Omega \label{eq:pm:strongu:eqn} \\
 u &= \rho_D^2 & &\text{on } \Gamma_D  \label{eq:pm:strongu:bcD} \\
-\grad u \cdot \bn &= 0 & &\text{on } \Gamma_N  \label{eq:pm:strongu:bcN} 
+\left(-\alpha k \grad u\right) \cdot \bn &= 0 & &\text{on } \Gamma_N  \label{eq:pm:strongu:bcN} 
 \end{align}
 \end{subequations}
-The (mixed) strong-form system \eqref{eq:pm:strongu} is a steady-state, semi-linear advection-diffusion problem for the squared density $u$.  The density $\rho$ and pressure $P$ are easily recovered via \eqref{eq:pm:defu}, \eqref{eq:ideal} as long as the solution satisfies $u\ge 0$.
+Model \eqref{eq:pm:strongu} is a steady-state, linear diffusion problem for the squared density $u$.  The density $\rho$ and pressure $P$ are easily recovered via \eqref{eq:pm:defu}, \eqref{eq:ideal} as long as the solution satisfies $u\ge 0$.
 
 
 \section{Weak form and FE method (for discontinuous permeability)}
 
-In this section we derive the weak form which is needed for an FE method.  The method we use is conforming, that is, it finds a continuous approximate solution living in the same function space where the continuum solution lives.  Both the continuum and FE solutions solve the same weak form, though the latter is over a smaller, finite-dimensional subspace.
+In this section we derive the weak form which is needed for an FE method.  The method we use is conforming, that is, it finds a continuous approximate solution living in the same function space where the continuum solution lives.  Both the continuum and FE solutions solve the same weak form, though the latter is over a finite-dimensional subspace.
 
-Recall that $H^1(\Omega)$ denotes the Sobolev (Hilbert) space of functions on $\Omega$ with weak derivatives which are square-integrable functions \citep[chapter 5]{Evans2010}, and write $H_0^1(\Omega)$ for the subspace of $H^1(\Omega)$ which have zero trace along $\Gamma_D$.  We multiply the strong form equation \eqref{eq:pm:strongu:eqn} by a test function $v \in H_0^1(\Omega)$.  For a scalar function $f$ and a vector field $\bX$, recall the divergence theorem $\int_\Omega \Div \bX\,\dx = \int_{\partial \Omega} \bX\cdot \bn\,\ds$ and the product rule $\Div(f\bX) = \grad f \cdot \bX + f \Div \bX$.  Using these tools, integration by parts generates
+Recall that $H^1(\Omega)$ denotes the Sobolev (Hilbert) space of functions on $\Omega$ with weak derivatives which are square-integrable functions \citep[chapter 5]{Evans2010}.  We write $H_0^1(\Omega)$ for the subspace of $H^1(\Omega)$ which have zero trace along $\Gamma_D$.  We multiply the strong form equation \eqref{eq:pm:strongu:eqn} by a test function $v \in H_0^1(\Omega)$.  For a scalar function $f$ and a vector field $\bX$, recall the divergence theorem $\int_\Omega \Div \bX\,\dx = \int_{\partial \Omega} \bX\cdot \bn\,\ds$ and the product rule $\Div(f\bX) = \grad f \cdot \bX + f \Div \bX$.  Using these tools, integration by parts generates
 \begin{equation}
 \int_\Omega \alpha k \grad u \cdot \grad v\,\dx - \int_{\partial\Omega} k v \grad u \cdot \bn\,\ds = 0 \label{eq:weaku:early}
 \end{equation}
-Since $v\in H_0^1(\Omega)$, the portion of the boundary integral which is in $\Gamma_D$ is zero, and \eqref{eq:pm:strongu:bcN} implies that the remaining integral over $\Gamma_N$ is zero.  Thus 
+Since $v\in H_0^1(\Omega)$, the $\Gamma_D$ portion of the boundary integral is zero, and \eqref{eq:pm:strongu:bcN} implies that the remaining integral over $\Gamma_N$ is zero.  Thus the weak form is simply\footnote{This will become more interesting when we include gravity.}
 \begin{equation}
 \int_\Omega \alpha k \grad u \cdot \grad v\,\dx = 0. \label{eq:weaku}
 \end{equation}
 
-While our FE method will follow a standard approach to Poisson equations, it is worth considering the theoretical setting for \eqref{eq:weaku}, especially because we will solve cases where the permeability field $k(x,y,z)$ has discontinuous jumps.  First, we assume that $k\in L^\infty(\Omega)$ with a positive lower bound; there is $k_0>0$ so that $k \ge k_0$.  Such a lower bound implies that the operator $L w = - \Div(k \grad w)$ is uniformly elliptic \citep[section 6.1]{Evans2010}.  We will assume that the boundary value $u_D = \rho_D^2$, defined only on $\Gamma_D$, is the trace of some $g\in H^1(\Omega)$, so that if $u\in H^1(\Omega)$ then $\tilde u = u - g \in H_0^1(\Omega)$.  The theory of problem \eqref{eq:weaku} then shows that there is a unique weak solution $u\in H^1(\Omega)$.  Specifically, apply Theorem 3 in section 6.2 of \citep{Evans2010}, noting the comments on pages 315 and 322, regarding boundary values and the constant in the Poincare inequality, respectively.  It is this weak solution of \eqref{eq:weaku} which we are seeking to approximate, and indeed the earlier strong form \eqref{eq:pm:strongu:eqn} generally will not have a solution so that the repeated (i.e.~second) derivative in that equation is actually meaningful.
+Our FE method will follow a standard approach to Poisson equations.  However, it is worth considering the theoretical setting for \eqref{eq:weaku}, especially because we will solve cases where the permeability field $k$ has discontinuous jumps.  First assume that $k\in L^\infty(\Omega)$ with a positive lower bound; there is $k_0>0$ so that $k \ge k_0$.  Such a lower bound implies that the operator $L w = - \Div(k \grad w)$ is uniformly elliptic \citep[section 6.1]{Evans2010}.  We will assume that the boundary value $u_D = \rho_D^2$, defined only on $\Gamma_D$, is the trace of some $g\in H^1(\Omega)$, so that if $u\in H^1(\Omega)$ then $\tilde u = u - g \in H_0^1(\Omega)$.  The theory of problem \eqref{eq:weaku} then shows that there is a unique weak solution $u\in H^1(\Omega)$.  (To show this, apply Theorem 3 in section 6.2 of \citep{Evans2010}, noting the comments on pages 315 and 322 regarding boundary values and the constant in the Poincare inequality, respectively.)  It is this weak solution which we are seeking to approximate.  The earlier strong form \eqref{eq:pm:strongu:eqn} generally will not have a solution for which the stated second derivative is actually meaningful.
 
 FIXME The permeability field $k(x,y,z)$ may be discontinuous, but for the purposes of the following FE method we will assume that the element faces (edges in 2D) include any of its discontinuities.  (In other words, we assume the mesh is adapted to any permeability discontinuities.)
 
