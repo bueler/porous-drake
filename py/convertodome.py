@@ -31,7 +31,7 @@ y_m = mesh.coordinates.dat.data_ro[:,1]
 
 # create a function for the surface elevation
 V = FunctionSpace(mesh, 'CG', 1)
-z = Function(V, name='z(x,y)')
+z = Function(V, name='z')
 
 # use interpn() to get z value for each mesh location (x_m[i],y_m[i])
 from scipy.interpolate import interpn
