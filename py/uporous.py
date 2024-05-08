@@ -46,7 +46,6 @@ else: # -problem extrude
         ztopbm = afile.load_function(basemesh, 'z')
     print(f'generating 3d extruded mesh with {args.mz} layers ...')
     mesh = ExtrudedMesh(basemesh, layers=args.mz, layer_height=1.0/args.mz)
-    # see https://www.firedrakeproject.org/extruded-meshes.html#solving-equations-on-extruded-meshes regarding indexing boundary parts of extruded meshes
     # compute a notional height function (for test purposes) on the base mesh
     xb, yb = SpatialCoordinate(basemesh)
     Vbase = FunctionSpace(basemesh,'CG',1)
