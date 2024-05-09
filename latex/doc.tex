@@ -46,6 +46,8 @@ style=apa, natbib=true,
 
 \newcommand{\jump}[1]{\llbracket #1 \rrbracket }
 
+\newcommand{\Patm}{P_{\text{atm}}}
+
 
 \title{Gas in a porous media, using Firedrake}
 \author{Tara Shreve}
@@ -60,36 +62,36 @@ style=apa, natbib=true,
 
 \thispagestyle{empty}
 
-\section{A porous medium model for Darcy-type gas flow}
+\section{Introduction: Porous media with Darcy-type gas flow}
 
-Suppose $\Omega$ is a 2D or 3D domain with well-behaved boundary, such as a rectangle or other polygon in 2D, or a polyhedron in 3D.  We will use $x,y$ for the horizontal coordinates and $z$ for the vertical coordinate.  (In 2D we use only $x,z$.)  Note distances are measured in meters and $z$ is measured positive upward.
+Suppose $\Omega$ is a 2D or 3D domain with well-behaved boundary.  We will use $x,y$ for the horizontal coordinates and $z$ for the vertical coordinate.  (In 2D we use only $x,z$.)  Note distances are measured in meters and $z$ is measured positive upward.
 
 Within $\Omega$ we assume there is a matrix of porous material with spatially-variable porosity $\phi(x,y,z)$ and permeability $k(x,y,z)$, which are dimensionless and in (SI units of) $\text{m}^2$, respectively.  These fields are assumed independent of time, but they are not assumed to be smooth.  In fact we will be interested in cases where they have large discontinuities.
 
-An ideal gas flows through the porous matrix, and we will take this gas to be ideal and isothermal.  The following are positive constants: $R$ is the gas constant, $T$ is the absolute temperature, and $M$ is the molar mass.  The ideal gas law says the density $\rho$ and pressure $P$ are proportional via $c = RT/M$:
+An ideal gas flows through the porous matrix, and we will take this gas to be ideal and isothermal.  The following are thus positive constants: $R$ is the gas constant, $T$ is the absolute temperature, $M$ is the molar mass, and $g$ is the acceleration of gravity.  The ideal gas law says the density $\rho$ and pressure $P$ are proportional via $c = M/(RT)$:
 \begin{equation}
-c \rho = P.  \label{eq:ideal}
+\rho = c P.  \label{eq:ideal}
 \end{equation}
 
-We assume that the gas flow satisfies Darcy's law \citep{Fowler2011}, thus the volumetric flux is driven by the gradient of the gas pressure:
+We assume that the gas flow satisfies Darcy's law \citep{Fowler2011}.  In such a model the volumetric flux $\bq$, also called the discharge, is driven by the gradient of the gas pressure.  However, in the presence of gravity the weight of the gas above contribute to the pressure even in the absence of flow.  Thus Darcy's law reads \citep{Collinson2012}:
 \begin{equation}
-\bq = - \frac{k}{\mu} \grad P \label{eq:pmtime:darcy}
+\bq = - \frac{k}{\mu} \left(\grad P + \rho g \grad z\right) \label{eq:pmtime:darcy}
 \end{equation}
-Here $\mu$ is the dynamic viscosity of the gas, again taken to be constant.\footnote{Temporarily we are ignoring gravity, which contributes a term \citep{Collinson2012}.  The size of the change in the solution, as a result of this additional term, are not so clear?}  Because mass is conserved, additionally we have:
+Here $\mu$ is the dynamic viscosity of the gas, again taken to be constant.  Note that if the surface pressure is atmospheric ($\Patm$) then a no-flow condition corresponds to $P=\Patm + \rho g h$ where $h$ is the depth; this consequence of equation \eqref{eq:pmtime:darcy} is unrelated to the ideal gas equation.
+
+Suppose gas is generated within the domain $\Omega$, for example by exsolution (degassing) of the porous matrix, at a rate of $Q_m(t,x,y,z)$ mass per volume per time.  Because mass is conserved, the following equation holds:
 \begin{equation}
-\phi \frac{\partial \rho}{\partial t} + \Div \left(\rho\, \bq\right) = 0. \label{eq:pmtime:masscont}
+\phi \frac{\partial \rho}{\partial t} + \Div \left(\rho\, \bq\right) = Q_m. \label{eq:pmtime:masscont}
 \end{equation}
-Here we are assuming no mass sources or sinks, as otherwise there would be an additional function on the right side.  Note that we can also write \eqref{eq:pmtime:masscont} using the (conserved) mass flux $\bsigma = \rho \bq$.  In this case the mass conservation equation is just $\partial \rho / \partial t + \Div \sigma = 0$.
+Note that we may also write \eqref{eq:pmtime:masscont} using the (conserved) mass flux $\bsigma = \rho \bq$; in the time-independent and source-free case \eqref{eq:pmtime:masscont} reduces to $\Div \sigma = 0$.
 
 Certain observations regarding these equations should be made.  First, gas density must be non-negative: $\rho\ge 0$.  Second, relative to the classic mass continuity statement ``$\partial\rho/\partial t + \Div(\rho \bv)=0$'' \citep[for example]{Tadmor2012}, where $\bv$ is the fluid velocity, note that \eqref{eq:pmtime:masscont} is scaled with the (dimensionless) porosity $\phi$.  However, $\phi$ is also implicit in the definition of $\bq$ because it is the gas volume per unit area of any face of the porous matrix: $\bq = \phi \bv$.  While the velocity $\bv$ may be helpful in understanding the solution, it is not required when stating the model.
 
-\newcommand{\Patm}{P_{\text{atm}}}
-
-Regarding units of the solution fields, $\rho(t,x,y,z)$ is in (SI units of) $\text{kg}\,\text{m}^{-3}$, $P(t,x,y,z)$ in $\text{Pa} = \text{N}\,\text{m}^{-2}$, $\bq(t,x,y,z)$ in $\text{m}^3\,\text{m}^{-2}\,\text{s}^{-1} = \text{m}\,\text{s}^{-1}$, and $\bsigma$ in $\text{kg}\,\text{m}^{-2}\,\text{s}^{-1}$.  The constant $c$ is in $\text{J}\,\text{kg}^{-1}$, and the dynamic viscosity $\mu$ is in $\text{Pa}\,\text{s}$.
+Regarding units of the solution fields, $\rho(t,x,y,z)$ is in (SI units of) $\text{kg}\,\text{m}^{-3}$, $P(t,x,y,z)$ in $\text{Pa} = \text{N}\,\text{m}^{-2}$, $\bq(t,x,y,z)$ in $\text{m}^3\,\text{m}^{-2}\,\text{s}^{-1} = \text{m}\,\text{s}^{-1}$, and $\bsigma$ in $\text{kg}\,\text{m}^{-2}\,\text{s}^{-1}$.  The constant $c$ is in $\text{kg}\,\text{J}^{-1}$, and the dynamic viscosity $\mu$ is in $\text{Pa}\,\text{s}$.
 
 Considering the system of equations \eqref{eq:ideal}--\eqref{eq:pmtime:masscont}, it is straightforward to eliminate the pressure $P$ and flux $\bq$, if this is desired:
 \begin{equation}
-\phi \frac{\partial \rho}{\partial t} - \Div \left(\frac{k}{\mu} \rho \grad\left(c \rho\right)\right) = 0. \label{eq:pmtime:primal}
+\phi \frac{\partial \rho}{\partial t} - \Div \left(\frac{k}{\mu} \rho \grad\left(\rho/c\right) + FIXME\right) = 0. \label{eq:pmtime:primal}
 \end{equation}
 This form is comparable to the better-known heat equation
 \begin{equation}
@@ -99,7 +101,7 @@ An important property of \eqref{eq:heattime:primal} is that the operator $\Div \
 
 The models above are time dependent, but setting $\partial \rho/\partial t = 0$ yields the steady-state version of the porous medium equation, here written in terms of the conserved mass density $\rho$:
 \begin{equation}
-- \Div\left(\frac{k}{\mu} \rho \grad\left(c \rho\right)\right) = 0
+- \Div\left(\frac{k}{\mu} \rho \grad\left(\rho/c\right) + FIXME\right) = 0
 \label{eq:pm:strong}
 \end{equation}
 
@@ -109,11 +111,11 @@ A straightforward substitution converts the above nonlinear model for the densit
 \begin{equation}
 u = \rho^2 \label{eq:pm:defu}
 \end{equation}
-and define convenience constant $\alpha = c/(2\mu)$.  Then equation \eqref{eq:pm:strong}, along with the boundary conditions, becomes the system
+and define convenience constant $\alpha = 1/(2c\mu)$.  Then equation \eqref{eq:pm:strong}, along with the boundary conditions, becomes the system
 \begin{subequations}
 \label{eq:pm:strongu}
 \begin{align}
-- \alpha \Div\left(k \grad u \right) &= 0 & &\text{on } \Omega \label{eq:pm:strongu:eqn} \\
+- \alpha \Div\left(k \grad u + FIXME\right) &= 0 & &\text{on } \Omega \label{eq:pm:strongu:eqn} \\
 u &= \rho_D^2 & &\text{on } \Gamma_D  \label{eq:pm:strongu:bcD} \\
 \left(-\alpha k \grad u\right) \cdot \bn &= 0 & &\text{on } \Gamma_N  \label{eq:pm:strongu:bcN} 
 \end{align}
@@ -155,7 +157,7 @@ v = TestFunction(H)
 \end{Verbatim}
 Weak form \eqref{eq:weaku} then corresponds to the UFL code
 \begin{Verbatim}[fontsize=\small,frame=lines]
-alf = c / (2.0 * mu)
+alf = 1.0 / (2.0 * c * mu)
 F = alf * k * dot(grad(u), grad(v)) * dx(degree=4)
 \end{Verbatim}
 The quadrature degree is fixed so as to disable Firedrake's automatic quadrature degree mechanism, which can generate unstable and inefficient degrees which are too large.
