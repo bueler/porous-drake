@@ -10,8 +10,8 @@ def test_verif2d():
     u = Function(H)
     v = TestFunction(H)
     k, phi = getgeounitsverif2d(mesh)
-    c = (R * T) / M
-    alf = c / (2.0 * mu)
+    c = M / (R * T)
+    alf = 1.0 / (2.0 * c * mu)
     F = alf * k * dot(grad(u), grad(v)) * dx(degree=4)
     bcs = getdirbcs2d(mesh, H)
     solve(F == 0, u, bcs=bcs, options_prefix='s',
@@ -31,8 +31,8 @@ def test_synth2d():
     u = Function(H)
     v = TestFunction(H)
     k, phi = getgeounits2d(mesh)
-    c = (R * T) / M
-    alf = c / (2.0 * mu)
+    c = M / (R * T)
+    alf = 1.0 / (2.0 * c * mu)
     F = alf * k * dot(grad(u), grad(v)) * dx(degree=4)
     bcs = getdirbcs2d(mesh, H)
     solve(F == 0, u, bcs=bcs, options_prefix='s',

@@ -78,16 +78,16 @@ else: # 3d
     phi = Constant(phiCV)
 
 # primal CG weak form
-c = (R * T) / M   # ideal gas law is  c rho = P  (J kg-1)
-alf = c / (2.0 * mu)
+c = M / (R * T)   # ideal gas law is  rho = c P
+alf = 1.0 / (2.0 * c * mu)
 F = alf * k * dot(grad(u), grad(v)) * dx(degree=4)
 
 if args.dim == 2:
     bcs = getdirbcs2d(mesh, H)
 else: # 3d
-    u_top = (Patm / c)**2
+    u_top = (c * Patm)**2
     Pbot = 1100000.0   # Pa; = 11 bar
-    u_bot = (Pbot / c)**2
+    u_bot = (c * Pbot)**2
     bcs = [DirichletBC(H, u_bot, 'bottom'),
            DirichletBC(H, u_top, 'top')]
 

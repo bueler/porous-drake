@@ -15,10 +15,10 @@ kOB, phiOB = 4.94e-15, 0.0324
 kFV, phiFV = 2.18e-13, 0.232
 
 # data for Dirichlet boundary conditions
-c = (R * T) / M    # ideal gas law is  c rho = P  (J kg-1)
-u_top = (Patm / c)**2
+c = M / (R * T)    # ideal gas law is  rho = c P
+u_top = (c * Patm)**2
 Pbot = 1100000.0   # Pa; = 11 bar
-u_bot = (Pbot / c)**2
+u_bot = (c * Pbot)**2
 
 def getmesh2d(mx, mz, quad=False):
     # indices of four boundaries/sides:  (1, 2, 3, 4) = (left, right, bottom, top)
