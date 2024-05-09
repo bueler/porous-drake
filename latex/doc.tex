@@ -26,6 +26,8 @@ style=apa, natbib=true,
 
 \newcommand{\bX}{\mathbf{X}}
 
+\newcommand{\bzero}{\bm{0}}
+
 \newcommand{\bsigma}{\bm{\sigma}}
 \newcommand{\bomega}{\bm{\omega}}
 
@@ -64,30 +66,27 @@ style=apa, natbib=true,
 
 \section{Introduction: Porous media with Darcy-type gas flow}
 
-Suppose $\Omega$ is a 2D or 3D domain with well-behaved boundary.  We will use $x,y$ for the horizontal coordinates and $z$ for the vertical coordinate.  (In 2D we use only $x,z$.)  Note distances are measured in meters and $z$ is measured positive upward.
+Suppose $\Omega$ is a 2D or 3D domain with well-behaved boundary.  We will use $x,y$ for the horizontal coordinates and $z$ for the vertical coordinate on $\Omega$.  (In 2D we use only $x,z$.)  Note distances are measured in meters and $z$ is measured positive upward.  Within $\Omega$ we assume there is a matrix of porous material with spatially-variable porosity $\phi(x,y,z)$ and permeability $k(x,y,z)$.  These two fields are dimensionless and in (SI units of) $\text{m}^2$, respectively.  They are assumed independent of time, but they are not assumed to be smooth; we are interested in cases where they have large discontinuities.
 
-Within $\Omega$ we assume there is a matrix of porous material with spatially-variable porosity $\phi(x,y,z)$ and permeability $k(x,y,z)$, which are dimensionless and in (SI units of) $\text{m}^2$, respectively.  These fields are assumed independent of time, but they are not assumed to be smooth.  In fact we will be interested in cases where they have large discontinuities.
-
-An ideal gas flows through the porous matrix, and we will take this gas to be ideal and isothermal.  The following are thus positive constants: $R$ is the gas constant, $T$ is the absolute temperature, $M$ is the molar mass, and $g$ is the acceleration of gravity.  The ideal gas law says the density $\rho$ and pressure $P$ are proportional via $c = M/(RT)$:
+A gas flows through the porous matrix, and we will take this gas to be ideal and isothermal.  The following are thus positive constants: $R$ is the gas constant, $T$ is the absolute temperature, and $M$ is the molar mass.  The ideal gas law says the density $\rho$ and pressure $P$ are proportional with constant $c = M/(RT)$:
 \begin{equation}
 \rho = c P.  \label{eq:ideal}
 \end{equation}
 
-We assume that the gas flow satisfies Darcy's law \citep{Fowler2011}.  In such a model the volumetric flux $\bq$, also called the discharge, is driven by the gradient of the gas pressure.  However, in the presence of gravity the weight of the gas above contribute to the pressure even in the absence of flow.  Thus Darcy's law reads \citep{Collinson2012}:
+We assume that the gas flow satisfies Darcy's law \citep{Fowler2011}.  In such a model the volumetric flux $\bq$, also called the discharge, is driven by the gradient of the gas pressure.  In the presence of gravity Darcy's law reads \citep{Collinson2012}:
 \begin{equation}
 \bq = - \frac{k}{\mu} \left(\grad P + \rho g \grad z\right) \label{eq:pmtime:darcy}
 \end{equation}
-Here $\mu$ is the dynamic viscosity of the gas, again taken to be constant.  Note that if the surface pressure is atmospheric ($\Patm$) then a no-flow condition corresponds to $P=\Patm + \rho g h$ where $h$ is the depth; this consequence of equation \eqref{eq:pmtime:darcy} is unrelated to the ideal gas equation.
+Here $\mu$ is the dynamic viscosity of the gas, again taken to be constant, $g$ is the acceleration of gravity, and $\grad z = (0,0,1)$ in 3D.  
 
-Suppose gas is generated within the domain $\Omega$, for example by exsolution (degassing) of the porous matrix, at a rate of $Q_m(t,x,y,z)$ mass per volume per time.  Because mass is conserved, the following equation holds:
+In addition to flow, we allow for the possibility that gas is generated within the domain $\Omega$, via a given source function $Q_m(t,x,y,z)$ in units of mass per volume per time.  Because mass is conserved \citep{Tadmor2012}, the following equation holds:
 \begin{equation}
 \phi \frac{\partial \rho}{\partial t} + \Div \left(\rho\, \bq\right) = Q_m. \label{eq:pmtime:masscont}
 \end{equation}
-Note that we may also write \eqref{eq:pmtime:masscont} using the (conserved) mass flux $\bsigma = \rho \bq$; in the time-independent and source-free case \eqref{eq:pmtime:masscont} reduces to $\Div \sigma = 0$.
 
-Certain observations regarding these equations should be made.  First, gas density must be non-negative: $\rho\ge 0$.  Second, relative to the classic mass continuity statement ``$\partial\rho/\partial t + \Div(\rho \bv)=0$'' \citep[for example]{Tadmor2012}, where $\bv$ is the fluid velocity, note that \eqref{eq:pmtime:masscont} is scaled with the (dimensionless) porosity $\phi$.  However, $\phi$ is also implicit in the definition of $\bq$ because it is the gas volume per unit area of any face of the porous matrix: $\bq = \phi \bv$.  While the velocity $\bv$ may be helpful in understanding the solution, it is not required when stating the model.
+Certain observations regarding these equations should be made.  First, gas density must be non-negative: $\rho\ge 0$.  Second, relative to the classic mass continuity statement ``$\partial\rho/\partial t + \Div(\rho \bv)=0$'' \citep[equation (4.3)]{Tadmor2012}, where $\bv$ is the fluid velocity, note that \eqref{eq:pmtime:masscont} is scaled with the (dimensionless) porosity $\phi$.  However, $\phi$ is also implicit in the definition of $\bq$ because it is the gas volume per unit area of any face of the porous matrix: $\bq = \phi \bv$.  While the velocity $\bv$ may be helpful in understanding the solution, it is not required when stating the model.  Third, note that a no-flow condition $\bq=\bzero$ implies, using \eqref{eq:ideal} and \eqref{eq:pmtime:darcy}, the equation $\partial P/\partial z = -cg P$.  If the pressure is atmospheric ($\Patm$) at the surface $z=L$ then we find that $P(z) = \Patm \exp(cg(L-z))$.  This no-flow pressure distribution grows exponentially with depth.  On the other hand, this is \emph{not} the lithostatic pressure distribution, which is generated by the weight of rock or magma \citep[equation (5)]{Collinson2012}.
 
-Regarding units of the solution fields, $\rho(t,x,y,z)$ is in (SI units of) $\text{kg}\,\text{m}^{-3}$, $P(t,x,y,z)$ in $\text{Pa} = \text{N}\,\text{m}^{-2}$, $\bq(t,x,y,z)$ in $\text{m}^3\,\text{m}^{-2}\,\text{s}^{-1} = \text{m}\,\text{s}^{-1}$, and $\bsigma$ in $\text{kg}\,\text{m}^{-2}\,\text{s}^{-1}$.  The constant $c$ is in $\text{kg}\,\text{J}^{-1}$, and the dynamic viscosity $\mu$ is in $\text{Pa}\,\text{s}$.
+Regarding units of the solution fields, $\rho(t,x,y,z)$ is in (SI units of) $\text{kg}\,\text{m}^{-3}$, $P(t,x,y,z)$ in $\text{Pa} = \text{N}\,\text{m}^{-2}$, and $\bq(t,x,y,z)$ in $\text{m}^3\,\text{m}^{-2}\,\text{s}^{-1} = \text{m}\,\text{s}^{-1}$.  The constant $c$ is in $\text{kg}\,\text{J}^{-1}$, and the dynamic viscosity $\mu$ is in $\text{Pa}\,\text{s}$.
 
 Considering the system of equations \eqref{eq:ideal}--\eqref{eq:pmtime:masscont}, it is straightforward to eliminate the pressure $P$ and flux $\bq$, if this is desired:
 \begin{equation}
