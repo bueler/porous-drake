@@ -1,14 +1,14 @@
 from firedrake import *
-from physical import R, T, M, mu, Patm
+from physical import g, R, T, M, mu, Patm
 
 # overall dimensions of domain
-lx = 100.0              # width (m)
-lz = 22.0               # height (m)
+Lx = 100.0              # width (m)
+Lz = 22.0               # height (m)
 
 ## multiple geological units with discontinuous k
 # note: k in m^2, phi dimensionless
-zCVOB, zOBFV = 12.0, 18.0
-xc = lx / 2.0
+zCVOB, zOBFV = -10.0, -4.0
+xc = Lx / 2.0
 xCVOB, xOBFV = 4.0, 12.0
 kCV, phiCV = 6.87e-12, 0.500
 kOB, phiOB = 4.94e-15, 0.0324
@@ -21,11 +21,17 @@ Pbot = 1100000.0   # Pa; = 11 bar
 u_bot = (c * Pbot)**2
 
 def getmesh2d(mx, mz, quad=False):
+    # generate mesh on [0,Lx] x [-Lz,0]
     # indices of four boundaries/sides:  (1, 2, 3, 4) = (left, right, bottom, top)
     if quad:
-        mesh = RectangleMesh(mx, mz, lx, lz, quadrilateral=True)
+        mesh = RectangleMesh(mx, mz, Lx, Lz, quadrilateral=True)
     else:
-        mesh = RectangleMesh(mx, mz, lx, lz, diagonal='crossed')
+        mesh = RectangleMesh(mx, mz, Lx, Lz, diagonal='crossed')
+    # at this point mesh is on rectangle [0,Lx] x [0,Lz], so we shift
+    x, z = SpatialCoordinate(mesh)
+    Vcoord = mesh.coordinates.function_space()
+    XZ = Function(Vcoord).interpolate(as_vector([x, z - Lz]))
+    mesh.coordinates.assign(XZ)
     return mesh
 
 def getgeounits2d(mesh, flat=False):
@@ -85,14 +91,13 @@ def getuverif2d(mesh):
     #   M v = b
     import numpy as np
     z1, z2 = zCVOB, zOBFV
-    dz1, dz2 = z2 - z1, lz - z2
-    M = np.array([[-z1,  1.0,  0.0,  0.0,  0.0],
-                  [kCV,  0.0, -kOB,  0.0,  0.0],
-                  [0.0, -1.0, -dz1,  1.0,  0.0],
-                  [0.0,  0.0,  kOB,  0.0, -kFV],
-                  [0.0,  0.0,  0.0,  1.0,  dz2]])
-    b = np.array([u_bot, 0.0, 0.0, 0.0, u_top])
-    aCV, bOB, aOB, bFV, aFV = tuple(np.linalg.solve(M, b))
+    k1, k2, k3 = kCV, kOB, kFV
+    M = np.array([[z1+Lz,   0.0,   0.0,  -1.0],
+                  [  0.0, z2-z1,   -z2,   1.0],
+                  [   k1,   -k2,   0.0,   0.0],
+                  [  0.0,    k2,   -k3,   0.0]])
+    b = np.array([-u_bot, u_top, 0.0, 0.0])
+    a1, a2, a3, b2 = tuple(np.linalg.solve(M, b))
     _, z = SpatialCoordinate(mesh)
-    uupper = conditional(z < z2, aOB * (z - z1) + bOB, aFV * (z - z2) + bFV)
-    return conditional(z < z1, aCV * z + u_bot, uupper)  # = u_exact(z)
+    uupper = conditional(z < z2, a2 * (z - z1) + b2, a3 * z + u_top)
+    return conditional(z < z1, a1 * (z + Lz) + u_bot, uupper)  # = u_exact(z)
