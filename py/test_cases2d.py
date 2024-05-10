@@ -3,6 +3,33 @@ from physical import g, R, T, M, mu, Patm
 from cases2d import getmesh2d, getgeounits2d, getgeounitsverif2d, \
                     getdirbcs2d, getuverif2d, unitsurfacefluxes2d
 
+def test_verif2d_noflow():
+    mesh = getmesh2d(10, 22, quad=True)
+    # note mz=22 gives mesh aligned to k discontinuities
+    H = FunctionSpace(mesh, 'CG', 1)
+    u = Function(H)
+    v = TestFunction(H)
+    k, phi = getgeounitsverif2d(mesh)
+    c = M / (R * T)
+    alf = 1.0 / (2.0 * c * mu)
+    VV = VectorFunctionSpace(mesh, 'CG', 1)
+    Z = Function(VV).interpolate(as_vector([0.0, g / mu]))
+    F = k * dot(alf * grad(u) + u * Z, grad(v)) * dx(degree=4)
+    u_top = (c * Patm)**2
+    bcs = [DirichletBC(H, u_top, 4),]  # only Patm on top; otherwise no flow
+    solve(F == 0, u, bcs=bcs, options_prefix='s',
+          solver_parameters = {'snes_type': 'ksponly',
+                               'ksp_type': 'preonly',
+                               'pc_type': 'lu',
+                               'pc_factor_mat_solver_type': 'mumps'})
+    uneg = Function(H).interpolate((-u + abs(u))/2.0)
+    assert norm(uneg, 'L2') == 0.0
+    _, z = SpatialCoordinate(mesh)
+    Hhigh = FunctionSpace(mesh, 'CG', 3)
+    uexact = Function(Hhigh).interpolate(u_top * exp(-2.0 * c * g * z))
+    err = errornorm(u, uexact, norm_type='L2') / norm(uexact, norm_type='L2')
+    assert err < 3.0e-9
+
 def test_verif2d_3hor():
     mesh = getmesh2d(10, 22, quad=True)
     # note mz=22 gives mesh aligned to k discontinuities
@@ -80,6 +107,7 @@ def test_synth2d_grav_order2():
     assert abs(OB - 0.11) < 0.01
     assert abs(FV - 1.76) < 0.01
 
+#test_verif2d_noflow()
 #test_verif2d_3hor()
 #test_synth2d_nograv()
 #test_synth2d_grav_order2()
