@@ -50,6 +50,7 @@ style=apa, natbib=true,
 \newcommand{\jump}[1]{\llbracket #1 \rrbracket }
 
 \newcommand{\Patm}{P_{\text{atm}}}
+\newcommand{\Pbot}{P_{\text{bot}}}
 
 
 \title{Gas in a porous media, using Firedrake}
@@ -118,11 +119,11 @@ u\big|_{t=0} &= \rho_0^2 & &\text{on } \Omega  \label{eq:strongu:initial}
 \end{align}
 \end{subequations}
 
-Observe that the spatial derivative term now corresponds to a linear and elliptic operator:
+Observe that the spatial derivative term now corresponds to a linear operator:
 \begin{equation}
 L u = - \Div\Big(k \left(\alpha\grad u + u \bZ\right)\Big).
 \end{equation}
-In fact ellipticity requires the assumption that $k$ is bounded and has a positive lower bound: $k \ge k_0 > 0$.  While \eqref{eq:strongu:eqn} is nonlinear in the time derivative, so that implicit time discretization will generate a nonlinear problem to solve at each step, the nonlinearity is zeroth-order in space and only modifies the diagonal of the Jacobian.
+The operator is uniformly elliptic if $k$ is bounded and has a positive lower bound: $k \ge k_0 > 0$.  While \eqref{eq:strongu:eqn} is nonlinear in the time derivative, so that implicit time discretization will generate a nonlinear problem to solve at each step, because the spatial operator is linear the nonlinearity in \eqref{eq:strongu:eqn} is zeroth-order in space, and only modifies the diagonal of the Jacobian in a Newton iteration, for example.
 
 In the steady-state case system \eqref{eq:strongu} is actually linear, and furthermore the porosity has no direct effect on the solution:
 \begin{subequations}
@@ -133,9 +134,44 @@ u &= \rho_D^2 & &\text{on } \Gamma_D  \label{eq:sstrongu:bcD} \\
 -k\left(\alpha\grad u + u \bZ\right) \cdot \bn &= 0 & &\text{on } \Gamma_N  \label{eq:sstrongu:bcN}
 \end{align}
 \end{subequations}
+Model \eqref{eq:sstrongu} is a steady-state, linear diffusion problem for the squared density $u$.  From a solution to either \eqref{eq:strongu} or \eqref{eq:sstrongu}, the density $\rho$ and pressure $P$ are easily recovered via equations \eqref{eq:ideal} and \eqref{eq:defu}, as long as the solution satisfies $u\ge 0$.
 
+\subsection{Exact solutions useful for verification}  If they are easily found and implemented in code, exact solutions of the above systems are useful tools for confirming code correctness.  One such solution has already been mentioned, namely the steady-state, gravity-balanced, no-flow solution which is exponential in depth in any geometry and/or permeability profile.  Another solution is a constructable steady-state, one-dimensional solution for piecewise-constant permeability, but in the absence of gravity.  We describe these two solutions in sufficient detail to support their implementation as verification and regression tests.
 
-Model \eqref{eq:strongu} is a steady-state, linear diffusion problem for the squared density $u$.  The density $\rho$ and pressure $P$ are easily recovered via equations \eqref{eq:ideal} and \eqref{eq:defu}, as long as the solution satisfies $u\ge 0$.
+\begin{itemize}
+\item \textbf{No-flow solution.}  Consider the steady-state system \eqref{eq:sstrongu} on a rectangular domain
+\begin{equation}
+\Omega = [0,L_x]\times [-L_z,0] = \{(x,z)\,:\,0<x<L_x, \,-L_z<z<0\}
+\end{equation}
+like that shown in Figure \ref{fig:COMSOLresults}.  Suppose the pressure is atmospheric $P=\Patm$ at the upper surface $\Gamma_D=\{z=0\}$, and that zero normal flow is imposed on \emph{all} of the remaining boundary.  (The bottom pressure condition shown in the Figure is not applied.)  Thus we set $u=c^2\Patm^2$ for condition \eqref{eq:sstrongu:bcD}, and set \eqref{eq:sstrongu:bcN} on all remaining boundary $\Gamma_N$.  As one may confirm by substitution, the formula
+\begin{equation}
+u(x,y,z) = c^2 \Patm^2 e^{-2cgz} \label{eq:noflow}
+\end{equation}
+satisfies condition \eqref{eq:sstrongu:bcD}, but also $\alpha\grad u + u \bZ = \bzero$ identically in the domain, so \eqref{eq:sstrongu:eqn} is satisfied with $Q_m=0$, and also \eqref{eq:sstrongu:bcN} is satisfied.  By uniqueness this is the solution to the boundary value problem.  The distribution of permeability is irrelevant to this solution, so it can be used as a part of verification for any function $k$.
+
+\item \textbf{Three horizontal units solution.}  Again consider a rectangular domain as in Figure \ref{fig:COMSOLresults}, with boundary conditions as shown.  Suppose the textural units are simplified to a permeability profile which is independent of $x$, as follows.  As a function of $z$ on $[-L_z,0]$, for transition locations $z_1$, $z_2$ we set:
+\begin{equation}
+k(z) = \begin{cases} k_1, & -L_z < z < z_1 \\
+                     k_2, & z_1 < z < z_2 \\
+                     k_3, & z_2 < z < 0. \end{cases}
+\end{equation}
+(In weak form below, because the problem is posed only using integrals, no choice of $k(z_1),k(z_2)$, i.e.~the exact permeabilities at the interfaces between units, needs to be made.)  Taking $Q_m=0$ and no gravity ($g=0$), and imposing pressures $P=\Pbot$ at $z=-L_z$ and $P=\Patm$ at $z=0$, symmetry implies that the solution is a function of $z$ only, and further that $u_zz=0$ within each textural unit.  That is, the solution is continuous and piecewise linear, and it connects the Dirichlet conditions at the bottom and top of the domain.  That is, the solution of \eqref{eq:sstrongu} has the following piecewise-defined form:
+\begin{equation}
+u(z) = \begin{cases} a_1 (z + L_z) + c^2 \Pbot^2, & -L_z < z < z_1 \\
+                     a_2 (z - z_1) + b_2, & z_1 < z < z_2 \\
+                     a_3 z + c^2 \Patm^2, & z_2 < z < 0 \end{cases} \label{eq:threehor}
+\end{equation}
+for some constants $a_1, a_2, a_3, b_2$.  The constants satisfy equations stating that $u(z)$ is continuous, so that it has now jumps at the unit interfaces $z=z_1,z_2$, and that the normal fluxes also have no jumps across the unit interfaces:
+\begin{align*}
+a_1 (z_1+L_z) + c^2 \Pbot^2 &= b_2 \\
+a_2 (z_2-z_1) + b_2 &= a_3 z_2 + c^2 \Patm^2 \\
+k_1 a_1 &= k_2 a_2 \\
+k_2 a_2 &= k_3 a_3
+\end{align*}
+Given the data of the problem, the numerical solution of this system of four equations is easily found.
+\end{itemize}
+
+FIXME implement no-flow; update code to match presentation and \eqref{eq:threehor} here
 
 
 \section{Weak form and FE method (for discontinuous permeability)}
