@@ -1,3 +1,4 @@
+from physical import g, R, T, M, mu, Patm
 from argparse import ArgumentParser, RawTextHelpFormatter
 parser = ArgumentParser(description="""
   Solves gas flow in porous media problems using Darcy's law,
@@ -13,6 +14,8 @@ parser.add_argument('-bottomz', type=float, default=0.0, metavar='ZB',
                     help='elevation of base of domain (-dim 3 only) [default 0.0]')
 parser.add_argument('-dim', type=int, metavar='D', default=2,
                     help='problem dimension: 2|3 [default 2]')
+parser.add_argument('-g', type=float, default=g, metavar='G',
+                    help=f'acceleration of gravity [default {g:.2f}]')
 parser.add_argument('-k_type', metavar='X', default='synth',
                     choices=['synth','flat','verif'],
                     help='permeability structures: synth|flat|verif (-dim 2 only) [default synth]')
@@ -32,7 +35,6 @@ import petsc4py
 petsc4py.init(passthroughoptions)
 from firedrake import *
 from firedrake.output import VTKFile
-from physical import R, T, M, mu, Patm
 from cases2d import getmesh2d, getgeounits2d, getgeounitsverif2d, \
                     getdirbcs2d, getuverif2d, unitsurfacefluxes2d
 
@@ -80,13 +82,18 @@ else: # 3d
 # primal CG weak form
 c = M / (R * T)   # ideal gas law is  rho = c P
 alf = 1.0 / (2.0 * c * mu)
-F = alf * k * dot(grad(u), grad(v)) * dx(degree=4)
+VV = VectorFunctionSpace(mesh, 'CG', 1)
+if args.dim == 2:
+    Z = Function(VV).interpolate(as_vector([0.0, args.g / mu]))
+else:
+    Z = Function(VV).interpolate(as_vector([0.0, 0.0, args.g / mu]))
+F = k * dot(alf * grad(u) + u * Z, grad(v)) * dx(degree=4)
 
 if args.dim == 2:
     bcs = getdirbcs2d(mesh, H)
 else: # 3d
     u_top = (c * Patm)**2
-    Pbot = 1100000.0   # Pa; = 11 bar
+    Pbot = 1100000.0   # Pa; = 11 bar; FIXME make into arg
     u_bot = (c * Pbot)**2
     bcs = [DirichletBC(H, u_bot, 'bottom'),
            DirichletBC(H, u_top, 'top')]
@@ -113,16 +120,14 @@ if args.dim == 2:
         S = FunctionSpace(mesh, 'RT', args.order + 1)
     else:
         S = FunctionSpace(mesh, 'RTCF', args.order + 1)
-    sigma = Function(S).project(- alf * k * grad(u))
+    sigma = Function(S).project(- k * (alf * grad(u) + u * Z))
     sigma.rename('sigma (mass flux; kg m-2 s-1)')
 
+    # FIXME also implement mass conservation measurement in 3d
     print('mass conservation (kg m-2 s-1):')
     n = FacetNormal(mesh)
-    if args.dim == 2:
-        bottomflux = assemble(dot(sigma,n) * ds(3))
-        topflux = assemble(dot(sigma,n) * ds(4))
-    else: # -problem extrude
-        assert NotImplementedError # FIXME extrude
+    bottomflux = assemble(dot(sigma,n) * ds(3))
+    topflux = assemble(dot(sigma,n) * ds(4))
     imbalance = topflux + bottomflux
     print(f'  flux out of top         = {topflux:13.6e}')
     print(f'  flux into bottom        = {-bottomflux:13.6e}')
