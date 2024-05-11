@@ -31,14 +31,16 @@ One can ask for a refined grid, higher-order elements, or triangular elements:
     $ python3 uporous.py -order 2
     $ python3 uporous.py -triangles
 
-An even simpler case for `k` provides a minimal verification.  Here the three `k` unit values are independent of the horizontal variable x and the equations can be exactly solved.  Running this case reports the norm difference between the exact and numerical solutions:
+Simpler cases provide a minimal verification.  These are documented in section 1.3 of `doc.pdf`.  For example, running 
 
-    $ python3 uporous.py -k_type verif
+    $ python3 uporous.py -g 0.0 -k_type verif
+
+solves the case called ``Three horizontal units solution.''  This case reports the norm difference between the exact and numerical solutions.
 
 If the vertical resolution is chosen so that the discontinuities in `k` are aligned to the grid then the reported error between the numerical solution and the exact solution is at the level of rounding error.  On the other hand, generic vertical refinement paths give converging results.  Compare:
 
-    $ for Z in 10 20 40 80; do python3 uporous.py -k_type verif -mz $Z; done   # not aligned
-    $ for Z in 11 22 44 88; do python3 uporous.py -k_type verif -mz $Z; done   # aligned
+    $ for Z in 22 44 88; do python3 uporous.py -g 0.0 -k_type verif -mz $Z; done   # aligned
+    $ for Z in 20 40 80; do python3 uporous.py -g 0.0 -k_type verif -mz $Z; done   # not aligned
 
 ## 3D Obsidian Dome case
 
@@ -64,6 +66,6 @@ The `.pvd` output files always include the gas density (`rho`) and pressure (`P`
 
 ## Testing
 
-Do
+This runs a couple of verification cases and a couple of cases like the 2d figures in `doc.pdf`.  Do:
 
     $ pytest .
