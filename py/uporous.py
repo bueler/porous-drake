@@ -82,11 +82,10 @@ else: # 3d
 # primal CG weak form
 c = M / (R * T)   # ideal gas law is  rho = c P
 alf = 1.0 / (2.0 * c * mu)
-VV = VectorFunctionSpace(mesh, 'CG', 1)
 if args.dim == 2:
-    Z = Function(VV).interpolate(as_vector([0.0, args.g / mu]))
+    Z = Constant(as_vector([0.0, args.g / mu]))
 else:
-    Z = Function(VV).interpolate(as_vector([0.0, 0.0, args.g / mu]))
+    Z = Constant(as_vector([0.0, 0.0, args.g / mu]))
 F = k * dot(alf * grad(u) + u * Z, grad(v)) * dx(degree=4)
 
 if args.dim == 2:
