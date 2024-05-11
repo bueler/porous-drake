@@ -25,8 +25,8 @@ if False:  # optional plot of raw 3D coordinates of points
 from firedrake import *
 from firedrake.output import VTKFile
 
-print(f'generating 2d mesh on [0,{xx.max()}] x [0,{yy.max()}] ...')
-# generate a Firedrake mesh, but note that it is *not* structured!:
+print(f'generating {mx} x {my} node mesh (2d) for (x,y) in [0,{xx.max()}] x [0,{yy.max()}] ...')
+# generate a Firedrake mesh, but note that it is *not* structured!
 # the ordering of vertices is *not* a straightforward map (i,j) --> (node index k)
 mesh = RectangleMesh(mx-1, my-1, xx.max(), yy.max(), name='basemesh')
 #mesh = RectangleMesh(mx-1, my-1, xx.max(), yy.max(), quadrilateral=True)  # also works
