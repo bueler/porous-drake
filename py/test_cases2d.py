@@ -89,9 +89,9 @@ def test_synth2d_nograv():
     imbalance = topflux + bottomflux
     assert imbalance < 2.0e-13
     CV, OB, FV = unitsurfacefluxes2d(mesh, sigma, topflux)
-    assert abs(CV - 98.1) < 0.1
-    assert abs(OB - 0.11) < 0.01
-    assert abs(FV - 1.76) < 0.01
+    assert abs(CV - 97.6) < 0.1
+    assert abs(OB - 0.09) < 0.01
+    assert abs(FV - 2.34) < 0.02
 
 def test_synth2d_grav_order2():
     mesh = getmesh2d(100, 22, quad=True)
@@ -103,9 +103,9 @@ def test_synth2d_grav_order2():
     imbalance = topflux + bottomflux
     assert imbalance < 5.0e-11
     CV, OB, FV = unitsurfacefluxes2d(mesh, sigma, topflux)
-    assert abs(CV - 98.1) < 0.1
-    assert abs(OB - 0.11) < 0.01
-    assert abs(FV - 1.76) < 0.01
+    assert abs(CV - 97.6) < 0.1
+    assert abs(OB - 0.09) < 0.01
+    assert abs(FV - 2.34) < 0.02
 
 #test_verif2d_noflow()
 #test_verif2d_3hor()

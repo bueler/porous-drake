@@ -1,3 +1,5 @@
+/*.pvd
+/*.pvsm
 /result*
 /odome*
 __pycache__/

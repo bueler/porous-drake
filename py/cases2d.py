@@ -7,7 +7,7 @@ Lz = 22.0               # height (m)
 
 ## multiple geological units with discontinuous k
 # note: k in m^2, phi dimensionless
-zCVOB, zOBFV = -10.0, -4.0
+zCVOB, zOBFV = -12.0, -7.0
 xc = Lx / 2.0
 xCVOB, xOBFV = 4.0, 12.0
 kCV, phiCV = 6.87e-12, 0.500
